@@ -315,5 +315,3 @@ dustcast/
   api.py        HTTP interface
   dispatch.py   reserve, ramp, decision costs
 ```
-
-See [CLAUDE.md](CLAUDE.md) for the original design and build order.
