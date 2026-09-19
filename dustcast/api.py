@@ -36,13 +36,27 @@ app = FastAPI(
 GOV_KEYS = {g.key: g for g in tunisia.GOVERNORATES}
 
 
-def _series_payload(s: pd.Series, start: str | None, end: str | None) -> list[dict]:
+def _series_payload(s: pd.Series, start: str | None, end: str | None,
+                    rng: pd.Series | None = None) -> list[dict]:
+    """Time series, optionally with the illustrative range around each point.
+
+    The range is emitted as explicit low/high fields named `*_illustrative` so a
+    consumer cannot mistake them for calibrated interval bounds. The caveat
+    itself travels in the envelope.
+    """
     if start:
         s = s[s.index >= pd.Timestamp(start, tz=service.TZ)]
     if end:
         s = s[s.index <= pd.Timestamp(end, tz=service.TZ)]
-    return [{"time": t.isoformat(), "mw": round(float(v), 4)}
-            for t, v in s.items()]
+    out = []
+    for t, v in s.items():
+        row = {"time": t.isoformat(), "mw": round(float(v), 4)}
+        if rng is not None and t in rng.index:
+            half = float(rng.loc[t]) / 2.0
+            row["low_illustrative"] = round(max(float(v) - half, 0.0), 4)
+            row["high_illustrative"] = round(float(v) + half, 4)
+        out.append(row)
+    return out
 
 
 def _envelope(bundle: service.ForecastBundle, rebuilt: bool, **extra) -> dict:
@@ -56,6 +70,15 @@ def _envelope(bundle: service.ForecastBundle, rebuilt: bool, **extra) -> dict:
         "model": bundle.model,
         "fleet": "SIMULATED -- no installation registry available to this project",
         "evaluated_horizons": list(ev.index) if not ev.empty else [],
+        "uncertainty": {
+            "status": "ILLUSTRATIVE -- not a validated interval",
+            "caveat": service.UNCERTAINTY_CAVEAT,
+            "spatial_correlation_rho": (None if bundle.spatial_rho is None
+                                        else round(bundle.spatial_rho, 4)),
+            "rho_source": "mean pairwise correlation of FORECAST CLEAR-SKY "
+                          "INDEX across governorates, used as a proxy for "
+                          "forecast-error correlation",
+        },
         "caveats": list(bundle.notes),
         **extra,
     }
@@ -104,7 +127,8 @@ def national(start: str | None = None, end: str | None = None,
              refresh: bool = Query(False, description="force a rebuild")) -> dict:
     bundle, rebuilt = service.get_forecast(force=refresh)
     return _envelope(bundle, rebuilt, scale="national",
-                     series=_series_payload(bundle.national, start, end))
+                     series=_series_payload(bundle.national, start, end,
+                                            bundle.national_range))
 
 
 @app.get("/forecast/governorate/{key}")

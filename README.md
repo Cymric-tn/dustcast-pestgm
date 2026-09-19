@@ -52,7 +52,7 @@ Open-Meteo NWP  ──►  pvlib physics  ──►  competing models  ──►
 | Learning from observed error | five models refit monthly, selected on held-back data |
 | Automatic refresh | rebuilds when new weather lands in cache, not on a timer |
 | Machine exchange | documented HTTP API + working sample consumer |
-| Uncertainty | conformal intervals, coverage reported with sharpness |
+| Uncertainty | per-site conformal intervals (coverage measured); national aggregation **illustrative only** |
 
 ## 3. The core idea, and where it broke
 
@@ -151,6 +151,17 @@ site overfitting, quantified on both sides.
 Conformal intervals, 90% nominal, scored on identical hours (frozen 16C
 holdout). Coverage and sharpness are reported together — either alone is
 gameable, since a band from 0 to ∞ has perfect coverage and zero value.
+
+> **The national aggregation is illustrative, not a validated interval.** The
+> per-site band is conformal-calibrated on three arrays at one Australian
+> facility and its site coverage is measured. Aggregating those bands to a
+> national figure uses a shrinkage factor that assumes equal regional error
+> scales and one common correlation (neither holds for population-weighted
+> regions), treats conformal half-widths as standard deviations (they are not),
+> and estimates the correlation from forecast *clear-sky index* as a proxy for
+> forecast-*error* correlation — a substitution we measured to differ
+> substantially (0.444 vs 0.089 on the same data). The API returns these bounds
+> as `low_illustrative` / `high_illustrative` with the caveat attached.
 
 | band | PICP | PINAW | Winkler |
 |---|---|---|---|
@@ -261,6 +272,10 @@ output `ESTIMATED`.
 - **The ML does not currently improve accuracy** on unseen arrays. It ships
   because it is competitive month to month and because the selector makes its
   use conditional and visible — not because it wins.
+- **The dashboard is still fed by the earlier single-segment pipeline** (500 MW
+  residential only) and has not been repointed at the service described here,
+  so its figures do not match the report. Repointing it is the first task before
+  the demo.
 - **Capacity figures conflict.** ~500 MW residential (STEG, end-June 2026) is
   used here; the Ministry's "~400 MW installed vs 70 MW operational" appears to
   conflate pipeline with commissioned capacity.

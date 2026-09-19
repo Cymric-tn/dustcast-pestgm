@@ -25,13 +25,29 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import fleet, learning, live, physics, tunisia
+from . import fleet, learning, live, physics, tunisia, uncertainty
 from .config import ARTIFACTS
 
 TZ = "Africa/Tunis"
 ARCHETYPES_PER_SEGMENT = 5
 MAX_AGE_SECONDS = 3600
 MODEL_NATIONAL = "L0 physics"
+
+#: This caveat travels with every payload that carries the range. The national
+#: aggregation is an illustrative sensitivity calculation, not a calibrated
+#: interval, and labelling it "90%" would claim more than the evidence supports.
+UNCERTAINTY_CAVEAT = (
+    "ILLUSTRATIVE RANGE, NOT A VALIDATED 90% INTERVAL. The per-site band is "
+    "conformal-calibrated at DKASC (Australia) and its site coverage is "
+    "measured. The national aggregation is not validated: it uses a shrinkage "
+    "factor that assumes equal regional error scales and one common "
+    "correlation, neither of which holds for population-weighted regions of "
+    "unequal capacity; it treats conformal half-widths as if they were standard "
+    "deviations; and the correlation is estimated from forecast CLEAR-SKY INDEX "
+    "as a proxy for forecast-ERROR correlation, which measurement showed can "
+    "differ substantially. No measured Tunisian national series was available "
+    "to score it against."
+)
 
 _lock = threading.Lock()
 _cached: "ForecastBundle | None" = None
@@ -44,6 +60,10 @@ class ForecastBundle:
     districts: pd.DataFrame        # hours x district
     governorates: pd.DataFrame     # hours x governorate
     national: pd.Series            # hours
+    #: Illustrative national uncertainty range, NOT a validated 90% interval.
+    #: See UNCERTAINTY_CAVEAT and dustcast/uncertainty.py.
+    national_range: pd.Series | None = None
+    spatial_rho: float | None = None
     model: str = MODEL_NATIONAL
     notes: tuple[str, ...] = field(default_factory=tuple)
 
@@ -104,12 +124,15 @@ def build_forecast(refresh: bool = False, forecast_days: int = 7) -> ForecastBun
 
     D = pd.DataFrame(cols)
     G = D.T.groupby({d.key: d.governorate for d in dists}).sum().T
+    rng, rho = _national_range(weathers, dists, G.index)
     return ForecastBundle(
         generated_at=pd.Timestamp.now(tz=TZ),
         weather_stamp=_weather_cache_stamp(),
         districts=D, governorates=G, national=G.sum(axis=1),
+        national_range=rng, spatial_rho=rho,
         notes=(
-            "Simulated fleet: Tunisia publishes no installation registry.",
+            "Simulated fleet: no installation-level registry was available to "
+            "this project.",
             "L0 physics only -- no Tunisian site has measured production to "
             "fit a learned correction to.",
             "Districts share their governorate's weather; the NWP grid is "
@@ -153,3 +176,46 @@ def selection_history() -> pd.DataFrame:
     """Which model the learning loop picked each month (step 16)."""
     p = ARTIFACTS / "step16_replay.csv"
     return pd.read_csv(p, index_col=0) if p.exists() else pd.DataFrame()
+
+
+def _national_range(weathers, dists, index) -> tuple[pd.Series | None, float | None]:
+    """Aggregate the L0 band across governorates. See UNCERTAINTY_CAVEAT.
+
+    The band itself is loaded from the calibration written by
+    scripts/step21_national_uncertainty.py rather than refitted here: fitting it
+    needs the DKASC record, which is far too slow for a request path.
+    """
+    path = ARTIFACTS / "step21_l0_band.csv"
+    if not path.exists():
+        return None, None
+    band = pd.read_csv(path)
+    band["elev"] = pd.Categorical(band["elev"])
+    band["kt"] = pd.Categorical(band["kt"])
+    band.attrs["overall"] = float(band["offset"].median())
+
+    cap_by_gov = {g.key: sum(d.capacity_mw for d in dists if d.governorate == g.key)
+                  for g in tunisia.GOVERNORATES}
+    widths, kt_cols = {}, {}
+    for i, gov in enumerate(tunisia.GOVERNORATES):
+        parts, cap_kw = [], 0.0
+        for j, seg in enumerate(fleet.SEGMENTS):
+            for a in fleet.sample_segment_archetypes(
+                    gov.key, seg, gov.latitude, gov.longitude, 50.0, TZ,
+                    n=ARCHETYPES_PER_SEGMENT, seed=i * 10 + j):
+                f = physics.build_physics_frame(a.site, weathers[i], clearsky_scale=None)
+                f = f[f["expected_kw"].notna()]
+                if f.empty:
+                    continue
+                lo, hi = uncertainty.apply_l0_band(f, a.site, band)
+                parts.append(hi - lo)
+                cap_kw += a.site.dc_capacity_w / 1000.0
+                kt_cols.setdefault(gov.key, f["clearsky_index"].where(
+                    f["solar_elevation"] > 10.0))
+        if parts and cap_kw:
+            widths[gov.key] = sum(parts) / cap_kw * cap_by_gov[gov.key]
+    if not widths:
+        return None, None
+    W = pd.DataFrame(widths).reindex(index).fillna(0.0)
+    rho = fleet.estimate_spatial_correlation(
+        pd.DataFrame(kt_cols).dropna(how="all"))
+    return fleet.aggregate_interval_width(W, rho), float(rho)
