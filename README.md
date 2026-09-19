@@ -6,12 +6,6 @@ national aggregation is illustrative — see §7) and an operator decision layer
 
 Submission for the **PESTGM 7.0 CDC Tech Challenge, Track 1**.
 
-> **Read this first.** The headline finding of this project is a negative one.
-> A gradient-boosted residual model wins by 4–25% on the array it was developed
-> on and loses by 7–48% on arrays it has never seen. The platform therefore ships
-> five competing models and selects between them on held-back data rather than
-> asserting that the ML is better. Everything below is reported as measured.
-
 ---
 
 ## 1. What the problem is
