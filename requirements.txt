@@ -1,0 +1,15 @@
+# DustCast -- pinned to what step 1 was validated against.
+numpy==2.5.3
+pandas==3.0.5
+scikit-learn==1.9.0
+pvlib==0.15.2
+xgboost==3.4.1
+mapie==1.5.0          # NOTE: 1.x removed MapieRegressor; see dustcast/conformal.py
+requests==2.32.*
+pyarrow==22.*
+matplotlib==3.10.*
+joblib==1.5.*
+tqdm==4.*
+fastapi==0.141.1
+httpx==0.28.1
+uvicorn==0.53.0

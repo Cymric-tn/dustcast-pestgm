@@ -1,0 +1,660 @@
+<meta charset="utf-8">
+<title>DustCast Grid Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#eff0ee; --surface:#fbfbfa; --surface-2:#f3f4f2; --line:#d9dcd9;
+  --ink:#14181a; --ink-2:#48504f; --ink-3:#79817f;
+  --forecast:#0a8f9c; --forecast-soft:rgba(10,143,156,.16);
+  --dust:#c07a18; --dust-soft:rgba(192,122,24,.16);
+  --act:#a3271d; --act-bg:rgba(163,39,29,.10);
+  --hold:#3a6f52; --hold-bg:rgba(58,111,82,.10);
+  --ramp-0:#f6efe3; --ramp-1:#e8d3ab; --ramp-2:#d9b273; --ramp-3:#c68f3c; --ramp-4:#9c661d;
+  --shadow:0 1px 2px rgba(16,24,26,.06),0 6px 18px rgba(16,24,26,.05);
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --cond:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+}
+:root:not([data-theme="light"]){ @media (prefers-color-scheme:dark){
+  --ground:#111416; --surface:#191d20; --surface-2:#202528; --line:#2f3639;
+  --ink:#e7eae9; --ink-2:#a7b0af; --ink-3:#767f7e;
+  --forecast:#1c9aa5; --forecast-soft:rgba(28,154,165,.20);
+  --dust:#be8228; --dust-soft:rgba(190,130,40,.20);
+  --act:#e07c72; --act-bg:rgba(224,124,114,.13);
+  --hold:#74b48e; --hold-bg:rgba(116,180,142,.13);
+  --ramp-0:#2a2721; --ramp-1:#4a3f2b; --ramp-2:#6d5730; --ramp-3:#96742f; --ramp-4:#c99a3c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.28);
+}}
+:root[data-theme="dark"]{
+  --ground:#111416; --surface:#191d20; --surface-2:#202528; --line:#2f3639;
+  --ink:#e7eae9; --ink-2:#a7b0af; --ink-3:#767f7e;
+  --forecast:#1c9aa5; --forecast-soft:rgba(28,154,165,.20);
+  --dust:#be8228; --dust-soft:rgba(190,130,40,.20);
+  --act:#e07c72; --act-bg:rgba(224,124,114,.13);
+  --hold:#74b48e; --hold-bg:rgba(116,180,142,.13);
+  --ramp-0:#2a2721; --ramp-1:#4a3f2b; --ramp-2:#6d5730; --ramp-3:#96742f; --ramp-4:#c99a3c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.28);
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1320px;margin:0 auto;padding:22px 20px 56px;display:flex;
+  flex-direction:column;gap:16px}
+
+/* ---- masthead ---- */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.mast h1{font-family:var(--cond);font-weight:700;font-size:30px;letter-spacing:-.015em;
+  margin:0;text-wrap:balance}
+.mast h1 span{color:var(--forecast)}
+.mast p{margin:5px 0 0;color:var(--ink-2);max-width:62ch}
+.stamp{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);text-align:right;
+  line-height:1.7}
+.stamp b{color:var(--ink-2);font-weight:500}
+
+/* ---- operator numbers ---- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
+.tile .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--ink-3);font-weight:600}
+.tile .v{font-family:var(--mono);font-size:29px;font-weight:600;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;line-height:1.15}
+.tile .s{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile.lead .v{color:var(--forecast)}
+
+/* ---- panels ---- */
+.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start}
+@media (max-width:960px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  box-shadow:var(--shadow);overflow:hidden}
+.phead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.phead h2{font-family:var(--cond);font-weight:600;font-size:16px;margin:0;letter-spacing:.005em}
+.phead .sub{font-size:12px;color:var(--ink-3);font-family:var(--mono)}
+.pbody{padding:12px 14px 14px}
+
+/* ---- controls ---- */
+.ctl{display:flex;gap:6px;align-items:center}
+button{font:inherit;font-size:12px;color:var(--ink-2);background:var(--surface-2);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s}
+button:hover{color:var(--ink);border-color:var(--ink-3)}
+button[aria-pressed="true"]{background:var(--dust-soft);color:var(--dust);
+  border-color:var(--dust)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--forecast);
+  outline-offset:2px}
+
+/* ---- time controls ---- */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+  padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.controls label{display:flex;align-items:center;gap:6px;font-size:11px;
+  text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
+input[type="datetime-local"]{font:inherit;font-size:12px;font-family:var(--mono);
+  color:var(--ink);background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:4px 8px}
+input[type="datetime-local"]:focus-visible{outline:2px solid var(--forecast);
+  outline-offset:1px}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:var(--surface);padding:5px 12px}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--forecast);color:#fff}
+.spacer{flex:1;min-width:0}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  padding:4px 10px;border-radius:999px}
+.badge.fc{background:var(--forecast-soft);color:var(--forecast)}
+.badge.hc{background:var(--dust-soft);color:var(--dust)}
+.hint{font-size:11.5px;color:var(--ink-3);padding:8px 2px 0;line-height:1.5}
+
+/* ---- legend ---- */
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:2px 2px 10px;font-size:12px;
+  color:var(--ink-2)}
+.legend i{display:inline-block;width:13px;height:3px;border-radius:2px;
+  margin-right:6px;vertical-align:middle}
+.legend .sw-band{height:11px;border-radius:3px;background:var(--forecast-soft);
+  border:1px solid var(--forecast)}
+
+/* ---- chart ---- */
+.chartbox{position:relative}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.gridline{stroke:var(--line);stroke-width:1}
+.axis{fill:var(--ink-3);font-family:var(--mono);font-size:10.5px}
+.axlabel{fill:var(--ink-3);font-family:var(--sans);font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.08em}
+.tip{position:absolute;pointer-events:none;background:var(--surface);
+  border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:12px;
+  box-shadow:var(--shadow);opacity:0;transition:opacity .1s;min-width:150px;z-index:5}
+.tip .t{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-bottom:5px}
+.tip .r{display:flex;justify-content:space-between;gap:14px;
+  font-variant-numeric:tabular-nums}
+.tip .r b{font-family:var(--mono);font-weight:600}
+
+/* ---- weather strip ---- */
+#weather{margin-top:2px}
+.wlab{fill:var(--ink-3);font-family:var(--sans);font-size:9px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.07em}
+.wval{fill:var(--ink-3);font-family:var(--mono);font-size:9px}
+
+/* ---- map ---- */
+.mapnote{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-3);
+  padding:6px 2px 0}
+.ramp{display:flex;height:8px;border-radius:2px;overflow:hidden;flex:1;max-width:150px}
+.ramp i{flex:1}
+.gov{cursor:pointer}
+.gov circle{transition:stroke-width .12s}
+.gov:hover circle,.gov.on circle{stroke-width:2.5}
+.govlab{fill:var(--ink-2);font-family:var(--sans);font-size:9px;font-weight:500}
+
+/* ---- table ---- */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-family:var(--cond);font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--ink-3);text-align:left;padding:9px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+th.n,td.n{text-align:right}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.on{background:var(--forecast-soft)}
+td.name{font-weight:500}
+.num{font-family:var(--mono)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  padding:2px 8px;border-radius:999px;letter-spacing:.02em}
+.chip.act{background:var(--act-bg);color:var(--act)}
+.chip.hold{background:var(--hold-bg);color:var(--hold)}
+.chip .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.bar{display:inline-block;height:5px;border-radius:3px;background:var(--dust);
+  vertical-align:middle;margin-right:7px;min-width:2px}
+
+/* ---- caveat ---- */
+.caveat{background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--dust);border-radius:8px;padding:14px 17px}
+.caveat h3{font-family:var(--cond);font-size:13px;margin:0 0 7px;
+  text-transform:uppercase;letter-spacing:.07em;color:var(--dust)}
+.caveat ul{margin:0;padding-left:17px;color:var(--ink-2);max-width:88ch}
+.caveat li{margin:4px 0}
+.caveat b{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1>DustCast <span>Grid Desk</span></h1>
+      <p>Rooftop PV that STEG cannot meter, forecast 48 hours ahead with a
+         calibrated 90% band — and what to do about it.</p>
+    </div>
+    <div class="stamp" id="stamp"></div>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="phead">
+        <div>
+          <h2 id="chartTitle">National rooftop PV</h2>
+          <div class="sub" id="chartSub"></div>
+        </div>
+        <div class="ctl">
+          <button id="btnNat">National</button>
+          <button id="btnDust" aria-pressed="false">Dust model off</button>
+        </div>
+      </div>
+      <div class="controls">
+        <label for="dt">Start<input type="datetime-local" id="dt" step="3600"></label>
+        <div class="seg" role="group" aria-label="Window length">
+          <button data-len="24">24 h</button>
+          <button data-len="48">48 h</button>
+          <button data-len="168">7 d</button>
+        </div>
+        <button id="btnPrev" aria-label="Back one day">&#9664; 1 d</button>
+        <button id="btnNext" aria-label="Forward one day">1 d &#9654;</button>
+        <button id="btnNow">Now</button>
+        <button id="btnDusty" title="Jump to the highest forecast aerosol load">Peak dust</button>
+        <span class="spacer"></span>
+        <span class="badge" id="badge"></span>
+      </div>
+      <div class="pbody">
+        <div class="legend">
+          <span><i style="background:var(--forecast)"></i>Forecast</span>
+          <span><i class="sw-band"></i>90% band</span>
+          <span id="legDust" hidden><i style="background:var(--dust)"></i>Dust model off</span>
+        </div>
+        <div class="chartbox">
+          <svg id="chart" viewBox="0 0 760 300" role="img"
+               aria-label="48-hour rooftop PV forecast with 90% confidence band"></svg>
+          <div class="tip" id="tip"></div>
+        </div>
+        <svg id="weather" viewBox="0 0 760 248" role="img"
+             aria-label="Irradiance, aerosol and air temperature over the same window"></svg>
+        <p class="hint" id="hint"></p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="phead">
+        <div>
+          <h2>Where the dust is</h2>
+          <div class="sub">bubble = forecast peak · colour = aerosol</div>
+        </div>
+      </div>
+      <div class="pbody">
+        <svg id="map" viewBox="0 0 360 392" role="img"
+             aria-label="Tunisia governorates, sized by forecast peak and shaded by aerosol optical depth"></svg>
+        <div class="mapnote">
+          <span id="aodLo" class="num"></span>
+          <span class="ramp"><i style="background:var(--ramp-0)"></i><i style="background:var(--ramp-1)"></i><i style="background:var(--ramp-2)"></i><i style="background:var(--ramp-3)"></i><i style="background:var(--ramp-4)"></i></span>
+          <span id="aodHi" class="num"></span>
+          <span>AOD</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="phead">
+      <div>
+        <h2>Cleaning crew — where to send them</h2>
+        <div class="sub">soiling is a modelled index with no ground truth: a trigger, not a measurement</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Governorate</th><th>Region</th><th class="n">Capacity</th>
+          <th class="n">Peak</th><th class="n">Dust</th><th class="n">AOD</th>
+          <th>Soiling index</th><th>Action</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="caveat">
+    <h3>Read this before quoting a number</h3>
+    <ul>
+      <li>The <b>500 MW national total is STEG's</b> (end-June 2026). Its
+          <b>split across governorates is ours</b>, allocated by population
+          because Tunisia publishes no PV registry — that probably over-weights
+          Tunis and under-weights the Sahel.</li>
+      <li>The fleet is <b>simulated</b>: 9 sampled rooftops per governorate with
+          plausible tilt, azimuth and capacity. The <b>upscaling method</b> is the
+          real one AEMO and Sheffield Solar use on actual registries.</li>
+      <li>The model is trained on <b>17 years of Australian desert PV</b>
+          (DKASC Alice Springs) because no Tunisian generation data is public.
+          Residual learning transfers loss <i>mechanisms</i>, not a power curve —
+          but it is still a transfer assumption.</li>
+      <li>The dust correction is fitted where Tunisia is <b>dustier than the
+          training site ever gets</b>: DKASC's 95th-percentile AOD is 0.175 and
+          Tunisia currently sits near 0.30. Those values are extrapolated.</li>
+      <li>The band is calibrated against <b>forecast</b> irradiance, not measured.
+          An earlier version calibrated on measured weather and was
+          <b>21&times; too narrow</b> for a deployment driven by an NWP — the
+          calibration set has to look like deployment.</li>
+      <li>Band coverage is verified at <b>90.4%</b> on Australian data. There is
+          no measured Tunisian output to verify it against here.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = (s) => document.querySelector(s);
+const fmt = (v, d = 0) => v.toLocaleString("en", {minimumFractionDigits: d, maximumFractionDigits: d});
+
+/* ---------- masthead ---------- */
+const M = DATA.meta, N = DATA.national, D = DATA.decisions;
+const NOW = M.now_index;                       // index of the forecast boundary
+let current = null;                            // null = national
+let dustOff = false;
+let winLen = M.horizon_hours;                  // hours shown
+let winStart = NOW;                            // index of the window's first hour
+
+$("#stamp").innerHTML =
+  `<b>${M.generated}</b><br>${(M.confidence*100).toFixed(0)}% band · ` +
+  `${M.history_days} d history + ${(N.t.length - NOW - 1)} h forecast` +
+  `<br>${fmt(M.installed_mw)} MW installed rooftop`;
+
+/* ---------- window helpers ---------- */
+function series() {
+  return current === null ? N : DATA.governorates.find(g => g.key === current);
+}
+function clampWindow() {
+  const n = N.t.length;
+  winLen = Math.min(winLen, n);
+  winStart = Math.max(0, Math.min(winStart, n - winLen));
+}
+// Tiles are always NATIONAL: "reserve" and "ramp" are system quantities, and
+// showing them for one governorate would invite reading them as a local
+// obligation. The chart drills down; the operator numbers do not.
+function windowStats(a, b) {
+  const pt = N.point.slice(a, b), lo = N.lower.slice(a, b), off = N.dust_off.slice(a, b);
+  const peak = Math.max(...pt), peakI = pt.indexOf(peak);
+  let reserve = 0, down = 0, up = 0;
+  for (let i = 0; i < pt.length; i++) reserve = Math.max(reserve, pt[i] - lo[i]);
+  for (let i = 3; i < pt.length; i++) {
+    const d = pt[i] - pt[i - 3];
+    if (d < down) down = d;
+    if (d > up) up = d;
+  }
+  const e = pt.reduce((x, y) => x + y, 0), eOff = off.reduce((x, y) => x + y, 0);
+  return { peak, peakAt: N.t[a + peakI], reserve, down, up,
+           dust: eOff ? (e / eOff - 1) * 100 : 0 };
+}
+const stamp = (iso) => new Date(iso).toLocaleString("en",
+  { weekday: "short", day: "numeric", month: "short", hour: "2-digit",
+    minute: "2-digit", hour12: false });
+
+function drawTiles(a, b) {
+  const s = windowStats(a, b);
+  $("#tiles").innerHTML = [
+    { k: "Peak output", v: fmt(s.peak, 0), u: " MW", lead: true,
+      s: `${stamp(s.peakAt)} · ${(s.peak / M.installed_mw * 100).toFixed(0)}% of installed` },
+    { k: "Reserve to hold", v: fmt(s.reserve, 0), u: " MW",
+      s: "sized off the band's lower edge" },
+    { k: "Worst 3 h ramp", v: fmt(Math.abs(s.down), 0), u: " MW",
+      s: `down · +${fmt(s.up, 0)} MW up` },
+    { k: "Dust costs", v: s.dust.toFixed(1), u: " %",
+      s: "vs the same forecast, dust model off" },
+  ].map(t => `<div class="tile${t.lead ? " lead" : ""}">
+      <span class="k">${t.k}</span>
+      <span class="v">${t.v}<span style="font-size:15px;color:var(--ink-3)">${t.u}</span></span>
+      <span class="s">${t.s}</span></div>`).join("");
+}
+
+/* ---------- chart ---------- */
+const C = { w: 760, h: 300, l: 46, r: 14, t: 14, b: 34 };
+
+function drawChart() {
+  clampWindow();
+  const s = series();
+  const a = winStart, b = Math.min(N.t.length, winStart + winLen);
+  const t = N.t.slice(a, b);
+  const pt = s.point.slice(a, b), lo = s.lower.slice(a, b),
+        up = s.upper.slice(a, b), off = s.dust_off.slice(a, b);
+  const n = t.length;
+  const iw = C.w - C.l - C.r, ih = C.h - C.t - C.b;
+  const hi = Math.max(...up, ...(dustOff ? off : [0]));
+  const top = hi <= 0 ? 1 : hi * 1.12;
+  const X = i => C.l + (n <= 1 ? 0 : i * iw / (n - 1));
+  const Y = v => C.t + ih - (v / top) * ih;
+
+  const raw = top / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].find(m => m * mag >= raw) * mag;
+  let g = "", ticks = "";
+  for (let v = 0; v <= top; v += step) {
+    const y = Y(v).toFixed(1);
+    g += `<line class="gridline" x1="${C.l}" y1="${y}" x2="${C.w - C.r}" y2="${y}"
+           ${v === 0 ? "" : 'stroke-dasharray="2 4"'} opacity="${v === 0 ? 1 : .65}"/>`;
+    ticks += `<text class="axis" x="${C.l - 8}" y="${+y + 3.5}" text-anchor="end">${fmt(v, step < 1 ? 1 : 0)}</text>`;
+  }
+  const every = Math.max(1, Math.round(n / 7));
+  let xt = "";
+  for (let i = 0; i < n; i += every) {
+    const d = new Date(t[i]);
+    const lab = d.toLocaleString("en", { weekday: "short" }) + " " +
+                String(d.getHours()).padStart(2, "0") + ":00";
+    xt += `<text class="axis" x="${X(i).toFixed(1)}" y="${C.h - C.b + 16}" text-anchor="middle">${lab}</text>`;
+  }
+
+  const line = arr => arr.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const band = up.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")
+    + " " + lo.map((_, i) => `L${X(n - 1 - i).toFixed(1)},${Y(lo[n - 1 - i]).toFixed(1)}`).join(" ") + " Z";
+
+  // Everything left of `NOW` is a HINDCAST, not a forecast: the weather behind
+  // it is Open-Meteo's best available analysis, not the forecast that was
+  // issued at the time. Shading it is the difference between letting an
+  // operator explore a past dust event and implying three weeks of skill.
+  let pastShade = "";
+  if (NOW > a) {
+    const edge = X(Math.min(NOW, b - 1) - a);
+    pastShade = `<rect x="${C.l}" y="${C.t}" width="${(edge - C.l).toFixed(1)}"
+      height="${ih}" fill="var(--ink-3)" opacity=".055"/>
+      <line x1="${edge.toFixed(1)}" y1="${C.t}" x2="${edge.toFixed(1)}" y2="${C.t + ih}"
+        stroke="var(--act)" stroke-width="1.4"/>
+      <text class="axlabel" x="${(edge + 5).toFixed(1)}" y="${C.t + 10}"
+        fill="var(--act)">now</text>`;
+  }
+
+  const peakI = pt.indexOf(Math.max(...pt));
+  $("#chart").innerHTML = `
+    <text class="axlabel" x="${C.l}" y="10">MW</text>
+    ${g}${pastShade}${ticks}${xt}
+    <path d="${band}" fill="var(--forecast-soft)" stroke="none"/>
+    ${dustOff ? `<path d="${line(off)}" fill="none" stroke="var(--dust)"
+        stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>` : ""}
+    <path d="${line(pt)}" fill="none" stroke="var(--forecast)" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${X(peakI).toFixed(1)}" cy="${Y(pt[peakI]).toFixed(1)}" r="4"
+      fill="var(--forecast)" stroke="var(--surface)" stroke-width="2"/>
+    <line id="cross" x1="0" y1="${C.t}" x2="0" y2="${C.t + ih}" stroke="var(--ink-3)"
+      stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
+    <rect x="${C.l}" y="${C.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/>`;
+
+  const svg = $("#chart"), tip = $("#tip"), cross = svg.querySelector("#cross");
+  svg.querySelector("#hit").addEventListener("pointermove", ev => {
+    const box = svg.getBoundingClientRect();
+    const px = (ev.clientX - box.left) / box.width * C.w;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - C.l) / iw * (n - 1))));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i));
+    cross.setAttribute("opacity", ".75");
+    tip.style.opacity = 1;
+    tip.style.left = Math.min(box.width - 175, Math.max(0, X(i) / C.w * box.width - 80)) + "px";
+    tip.style.top = (Y(up[i]) / C.h * box.height - 84) + "px";
+    tip.innerHTML =
+      `<div class="t">${stamp(t[i])}${a + i <= NOW ? " · hindcast" : ""}</div>
+       <div class="r"><span>Forecast</span><b style="color:var(--forecast)">${fmt(pt[i], 1)} MW</b></div>
+       <div class="r"><span>90% band</span><b>${fmt(lo[i], 1)}–${fmt(up[i], 1)}</b></div>` +
+      (dustOff ? `<div class="r"><span>Dust off</span><b style="color:var(--dust)">${fmt(off[i], 1)}</b></div>` : "");
+  });
+  svg.querySelector("#hit").addEventListener("pointerleave", () => {
+    tip.style.opacity = 0; cross.setAttribute("opacity", 0);
+  });
+
+  const name = current === null ? "National rooftop PV"
+             : DATA.governorates.find(g => g.key === current).name;
+  $("#chartTitle").textContent = name;
+  $("#chartSub").textContent =
+    `${stamp(t[0])} → ${stamp(t[n - 1])} · peak ${fmt(Math.max(...pt), current === null ? 0 : 2)} MW`;
+  $("#legDust").hidden = !dustOff;
+
+  // Badge and hint: say plainly which regime the window is in.
+  const badge = $("#badge");
+  // `a >= NOW`, not `>`: a window that begins exactly at the boundary contains
+  // no hindcast hours at all, and labelling the default view "Forecast +
+  // hindcast" would undersell it every time the page loads.
+  if (b - 1 <= NOW)      { badge.className = "badge hc"; badge.textContent = "Hindcast"; }
+  else if (a >= NOW)     { badge.className = "badge fc"; badge.textContent = "Forecast"; }
+  else                   { badge.className = "badge fc"; badge.textContent = "Forecast + hindcast"; }
+  $("#hint").textContent = a >= NOW
+    ? "Every hour shown is a forecast issued now."
+    : "Shaded hours are a hindcast — the model re-run on the weather analysis for that time, not the forecast that was issued then. Useful for inspecting a past dust event; not evidence of forecast skill.";
+
+  drawWeather(a, b, X, n);
+  drawTiles(a, b);
+  const dtISO = N.t[a];
+  $("#dt").value = dtISO.slice(0, 16);
+  $("#dt").min = N.t[0].slice(0, 16);
+  $("#dt").max = N.t[N.t.length - 1].slice(0, 16);
+  document.querySelectorAll(".seg button").forEach(el =>
+    el.setAttribute("aria-pressed", String(+el.dataset.len === winLen)));
+}
+
+/* ---------- weather strip ---------- */
+// Three separate panels sharing one x-axis, never a dual axis: irradiance and
+// temperature have no common scale, and overlaying them would invent crossings
+// that mean nothing. Stacked small multiples let the eye read "the dip in power
+// is that gap between forecast and clear-sky irradiance" directly.
+function weatherSeries() {
+  if (current === null) return DATA.weather;
+  const g = DATA.governorates.find(x => x.key === current);
+  return { ghi: g.ghi, clearsky_ghi: g.clearsky_ghi,
+           temp_air: g.temp_air, aod: g.aod_series };
+}
+
+function drawWeather(a, b, X, n) {
+  const w = weatherSeries();
+  if (!w || !w.ghi) { $("#weather").innerHTML = ""; return; }
+  const PH = 72, GAP = 10, L = C.l, R = 14, W = 760;
+  const panels = [
+    { key: "ghi", label: "Irradiance W/m\u00b2", colour: "var(--forecast)",
+      ref: "clearsky_ghi", fill: true },
+    { key: "aod", label: "Saharan aerosol \u00b7 AOD", colour: "var(--dust)", fill: true },
+    { key: "temp_air", label: "Air temperature \u00b0C", colour: "var(--ink)" },
+  ];
+
+  let out = "";
+  panels.forEach((pn, pi) => {
+    const top = pi * (PH + GAP);
+    const vals = w[pn.key].slice(a, b);
+    const ref = pn.ref ? w[pn.ref].slice(a, b) : null;
+    const lo = pn.key === "temp_air" ? Math.min(...vals) - 1 : 0;
+    const hi = Math.max(...vals, ...(ref || [0])) * 1.08 || 1;
+    const Y = v => top + PH - ((v - lo) / (hi - lo)) * PH;
+    const path = arr => arr.map((v, i) =>
+      `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+
+    // baseline + panel frame
+    out += `<line x1="${L}" y1="${(top + PH).toFixed(1)}" x2="${W - R}"
+      y2="${(top + PH).toFixed(1)}" class="gridline"/>`;
+
+    // hindcast shading, matched to the main chart
+    if (NOW > a) {
+      const edge = X(Math.min(NOW, b - 1) - a);
+      out += `<rect x="${L}" y="${top}" width="${(edge - L).toFixed(1)}"
+        height="${PH}" fill="var(--ink-3)" opacity=".055"/>
+        <line x1="${edge.toFixed(1)}" y1="${top}" x2="${edge.toFixed(1)}"
+          y2="${top + PH}" stroke="var(--act)" stroke-width="1" opacity=".55"/>`;
+    }
+
+    if (pn.fill) {
+      out += `<path d="${path(vals)} L${X(n - 1).toFixed(1)},${Y(lo).toFixed(1)}
+        L${X(0).toFixed(1)},${Y(lo).toFixed(1)} Z" fill="${pn.colour}"
+        opacity="${pn.key === "aod" ? ".26" : ".18"}" stroke="none"/>`;
+    }
+    if (ref) {
+      // The clear-sky envelope. The gap below it is cloud, and that gap is the
+      // whole reason the power curve has the shape it has.
+      out += `<path d="${path(ref)}" fill="none" stroke="var(--ink-3)"
+        stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>`;
+    }
+    out += `<path d="${path(vals)}" fill="none" stroke="${pn.colour}"
+      stroke-width="1.6" stroke-linejoin="round"/>`;
+
+    out += `<text class="wlab" x="${L}" y="${(top + 10).toFixed(1)}">${pn.label}</text>`;
+    out += `<text class="wval" x="${W - R}" y="${(top + 10).toFixed(1)}"
+      text-anchor="end">${fmt(hi / 1.08, pn.key === "aod" ? 2 : 0)}</text>`;
+    if (ref) {
+      out += `<text class="wval" x="${L + 128}" y="${(top + 10).toFixed(1)}"
+        opacity=".85">- - clear sky</text>`;
+    }
+  });
+  $("#weather").innerHTML = out;
+}
+
+/* ---------- map ---------- */
+const G = DATA.governorates;
+const aods = G.map(g => g.aod), aLo = Math.min(...aods), aHi = Math.max(...aods);
+$("#aodLo").textContent = aLo.toFixed(2);
+$("#aodHi").textContent = aHi.toFixed(2);
+const RAMP = ["--ramp-0", "--ramp-1", "--ramp-2", "--ramp-3", "--ramp-4"];
+const shade = a => `var(${RAMP[Math.min(4, Math.floor((a - aLo) / ((aHi - aLo) || 1) * 5))]})`;
+
+function drawMap() {
+  const W = 360, H = 392, pad = 40;
+  const lons = G.map(g => g.lon), lats = G.map(g => g.lat);
+  const x0 = Math.min(...lons), x1 = Math.max(...lons);
+  const y0 = Math.min(...lats), y1 = Math.max(...lats);
+  const X = l => pad + (l - x0) / (x1 - x0) * (W - 2 * pad);
+  const Y = l => H - pad - (l - y0) / (y1 - y0) * (H - 2 * pad);
+  const rMax = Math.max(...G.map(g => g.peak_mw));
+  // Labels for the four greater-Tunis governorates would overprint; fan them.
+  const nudge = {tunis: [34, -6], ariana: [0, -17], ben_arous: [34, 9],
+                 manouba: [-34, 3], zaghouan: [0, 16], nabeul: [26, 4],
+                 bizerte: [0, -16]};
+  $("#map").innerHTML = G.map(g => {
+    const r = 5 + 15 * Math.sqrt(g.peak_mw / rMax);
+    const [dx, dy] = nudge[g.key] || [0, -(r + 5)];
+    return `<g class="gov${current === g.key ? " on" : ""}" data-k="${g.key}"
+              tabindex="0" role="button" aria-label="${g.name}">
+      <circle cx="${X(g.lon).toFixed(1)}" cy="${Y(g.lat).toFixed(1)}" r="${r.toFixed(1)}"
+        fill="${shade(g.aod)}" stroke="${current === g.key ? "var(--forecast)" : "var(--ink-3)"}"
+        stroke-width="${current === g.key ? 2.5 : 1}" opacity=".95"/>
+      <text class="govlab" x="${(X(g.lon) + dx).toFixed(1)}" y="${(Y(g.lat) + dy).toFixed(1)}"
+        text-anchor="${dx === 0 ? "middle" : dx > 0 ? "start" : "end"}">${g.name}</text></g>`;
+  }).join("");
+  $("#map").querySelectorAll(".gov").forEach(el => {
+    const pick = () => select(el.dataset.k);
+    el.addEventListener("click", pick);
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+    });
+  });
+}
+
+/* ---------- table ---------- */
+function drawRows() {
+  const worst = Math.max(...G.map(g => g.soiling_pct));
+  $("#rows").innerHTML = [...G].sort((a, b) => b.soiling_pct - a.soiling_pct).map(g => `
+    <tr data-k="${g.key}" class="${current === g.key ? "on" : ""}">
+      <td class="name">${g.name}</td>
+      <td style="color:var(--ink-3)">${g.region}</td>
+      <td class="n num">${g.capacity_mw.toFixed(1)}</td>
+      <td class="n num">${g.peak_mw.toFixed(1)}</td>
+      <td class="n num">${fmt(g.dust, 0)}</td>
+      <td class="n num">${g.aod.toFixed(3)}</td>
+      <td><span class="bar" style="width:${(g.soiling_pct / worst * 62).toFixed(0)}px"></span>
+          <span class="num">${g.soiling_pct.toFixed(1)}%</span></td>
+      <td><span class="chip ${g.clean_now ? "act" : "hold"}"><span class="dot"></span>
+          ${g.clean_now ? "Send crew" : "Hold"}</span></td>
+    </tr>`).join("");
+  $("#rows").querySelectorAll("tr").forEach(tr =>
+    tr.addEventListener("click", () => select(tr.dataset.k)));
+}
+
+/* ---------- wiring ---------- */
+function select(key) { current = current === key ? null : key; render(); }
+function render() { drawChart(); drawMap(); drawRows(); }
+
+const nearestIndex = (iso) => {
+  const target = new Date(iso).getTime();
+  let best = 0, gap = Infinity;
+  for (let i = 0; i < N.t.length; i++) {
+    const d = Math.abs(new Date(N.t[i]).getTime() - target);
+    if (d < gap) { gap = d; best = i; }
+  }
+  return best;
+};
+
+$("#btnNat").addEventListener("click", () => { current = null; render(); });
+$("#btnDust").addEventListener("click", e => {
+  dustOff = !dustOff;
+  e.currentTarget.setAttribute("aria-pressed", String(dustOff));
+  drawChart();
+});
+$("#dt").addEventListener("change", e => {
+  if (e.target.value) { winStart = nearestIndex(e.target.value); drawChart(); }
+});
+document.querySelectorAll(".seg button").forEach(el =>
+  el.addEventListener("click", () => { winLen = +el.dataset.len; drawChart(); }));
+$("#btnPrev").addEventListener("click", () => { winStart -= 24; drawChart(); });
+$("#btnNext").addEventListener("click", () => { winStart += 24; drawChart(); });
+$("#btnNow").addEventListener("click", () => { winStart = NOW; drawChart(); });
+$("#btnDusty").addEventListener("click", () => {
+  // Jump to the dustiest forecast hour anywhere in the window we hold. This is
+  // the demo the whole project exists for, and hunting for it by hand on stage
+  // is a bad use of five minutes.
+  const aod = DATA.governorates[0].aod_series.map((_, i) =>
+    DATA.governorates.reduce((m, g) => Math.max(m, g.aod_series[i] ?? 0), 0));
+  let best = NOW, peak = -1;
+  for (let i = NOW; i < aod.length; i++) if (aod[i] > peak) { peak = aod[i]; best = i; }
+  winStart = Math.max(NOW, best - Math.round(winLen / 3));
+  drawChart();
+});
+render();
+addEventListener("resize", drawChart);
+</script>
