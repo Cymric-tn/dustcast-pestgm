@@ -214,10 +214,31 @@ Tunisian governorate. CAMS dust at ~40 km is the coarser constraint.
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-Training data is not in the repo (313 MB):
+Production data is not in the repo (~880 MB across three arrays):
 
 ```bash
-curl -C - -o data/raw/dkasc_site03_5min.csv https://solarcentre.spinifexvalley.com.au/export/70-Site_DKA-M5_A-Phase.csv
+B=https://solarcentre.spinifexvalley.com.au/export
+curl -C - -o data/raw/dkasc_site03_5min.csv  $B/70-Site_DKA-M5_A-Phase.csv
+curl -C - -o data/raw/fleet/dka_16c_east.csv $B/105-Site_DKA-M1_C-Phase.csv
+curl -C - -o data/raw/fleet/dka_16d_west.csv $B/81-Site_DKA-M2_A-Phase.csv
+```
+
+| array | provider source | bytes | SHA-256 (first 16) |
+|---|---|---|---|
+| 3 | 70, `Site_DKA-M5_A-Phase` | 313,051,557 | `0cb0746fe5abda4e` |
+| 16C | 105, `Site_DKA-M1_C-Phase` | 285,663,460 | `2b155248911195b2` |
+| 16D | 81, `Site_DKA-M2_A-Phase` | 284,948,839 | `b829d6ce08612026` |
+
+All three remote `Content-Length` values match these files exactly. The provider
+labels source 105 "BP Solar, 2.0kW, poly-Si, Fixed, 2008, **East**" and source 81
+the same but **West**, confirming capacity and orientation for both.
+
+Rebuild every deliverable from one forecast snapshot. This is a dependency
+chain, and the script verifies afterwards that the report, dashboard, screenshot
+and API example all quote the same snapshot:
+
+```bash
+.venv/bin/python scripts/build_report.py
 ```
 
 | | |
