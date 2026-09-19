@@ -1,8 +1,8 @@
 # DustCast
 
 A forecasting platform for Tunisia's rooftop solar production, at district,
-governorate and national scale, with calibrated uncertainty and an operator
-decision layer.
+governorate and national scale, with per-site calibrated uncertainty (the
+national aggregation is illustrative — see §7) and an operator decision layer.
 
 Submission for the **PESTGM 7.0 CDC Tech Challenge, Track 1**.
 
