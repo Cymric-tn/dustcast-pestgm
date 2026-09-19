@@ -1,5 +1,5 @@
 $ curl -s localhost:8000/forecast/national
-{ "generated_at": "2026-09-19T21:49:57+01:00",
+{ "generated_at": "2026-09-19T22:22:30+01:00",
   "units": "MW (AC)", "model": "L0 physics",
   "fleet": "SIMULATED -- no installation registry available to this project",
   "evaluated_horizons": ["J+0", "J+1", "J+2", "J+3"],

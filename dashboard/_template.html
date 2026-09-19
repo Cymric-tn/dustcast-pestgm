@@ -280,26 +280,37 @@ td.name{font-weight:500}
   <section class="caveat">
     <h3>Read this before quoting a number</h3>
     <ul>
-      <li>The <b>500 MW national total is STEG's</b> (end-June 2026). Its
-          <b>split across governorates is ours</b>, allocated by population
-          because Tunisia publishes no PV registry — that probably over-weights
-          Tunis and under-weights the Sahel.</li>
-      <li>The fleet is <b>simulated</b>: 9 sampled rooftops per governorate with
-          plausible tilt, azimuth and capacity. The <b>upscaling method</b> is the
-          real one AEMO and Sheffield Solar use on actual registries.</li>
-      <li>The model is trained on <b>17 years of Australian desert PV</b>
-          (DKASC Alice Springs) because no Tunisian generation data is public.
-          Residual learning transfers loss <i>mechanisms</i>, not a power curve —
-          but it is still a transfer assumption.</li>
-      <li>The dust correction is fitted where Tunisia is <b>dustier than the
-          training site ever gets</b>: DKASC's 95th-percentile AOD is 0.175 and
-          Tunisia currently sits near 0.30. Those values are extrapolated.</li>
-      <li>The band is calibrated against <b>forecast</b> irradiance, not measured.
-          An earlier version calibrated on measured weather and was
-          <b>21&times; too narrow</b> for a deployment driven by an NWP — the
-          calibration set has to look like deployment.</li>
-      <li>Band coverage is verified at <b>90.4%</b> on Australian data. There is
-          no measured Tunisian output to verify it against here.</li>
+      <li><b>630 MW</b> is 500 MW residential rooftop plus ~130 MW on MV/HV
+          networks, both <b>STEG's</b> (end-June 2026). The <b>split into three
+          segments, into governorates and into units is ours</b> — allocated by
+          population, which probably over-weights Tunis and under-weights the
+          Sahel.</li>
+      <li>The fleet is <b>simulated</b>: five sampled installations per segment
+          per governorate, with plausible tilt, azimuth and capacity. No
+          installation-level Tunisian data was available to this project. The
+          <b>upscaling method</b> is the one AEMO and Sheffield Solar use on
+          real registries.</li>
+      <li>The <b>266 units are prototypes</b>, built from delegation counts.
+          They are not verified STEG operational units, which are more likely
+          defined by substations and MV feeders than by administrative
+          boundaries.</li>
+      <li>The model is <b>L0 physics</b> — pvlib on forecast weather, no learned
+          correction. Every model that beats it learns from a site's own
+          measured output, and no rooftop here has any. Its measured error, at
+          DKASC in Australia, is <b>5.6% nMAE intra-day and 6.7% at J+1</b>.
+          Tunisian accuracy is <b>unvalidated</b>.</li>
+      <li>The band is an <b>illustrative range, not a validated interval</b>.
+          The per-site band is conformal-calibrated at DKASC, where measured
+          coverage is 94.1%, 92.1% and 86.4% on three arrays against 90%
+          nominal. Aggregating those across regions assumes equal error scales
+          and one common correlation, treats half-widths as standard deviations,
+          and estimates the correlation from forecast clear-sky index as a proxy
+          for forecast-error correlation. National coverage is <b>not</b>
+          established.</li>
+      <li>Reserve, ramp and range tiles are <b>scenario estimates</b> from the
+          simulated fleet. "Reserve to hold" is the widest half-range anywhere in
+          the displayed window, which falls in a low-sun hour, not at peak
+          output.</li>
     </ul>
   </section>
 </div>
@@ -360,7 +371,7 @@ function drawTiles(a, b) {
     { k: "Peak output", v: fmt(s.peak, 0), u: " MW", lead: true,
       s: `${stamp(s.peakAt)} · ${(s.peak / M.installed_mw * 100).toFixed(0)}% of installed` },
     { k: "Reserve to hold", v: fmt(s.reserve, 0), u: " MW",
-      s: "sized off the band's lower edge" },
+      s: "scenario estimate \u00b7 widest half-range in window" },
     { k: "Worst 3 h ramp", v: fmt(Math.abs(s.down), 0), u: " MW",
       s: `down · +${fmt(s.up, 0)} MW up` },
     { k: "Range at peak", v: `\u00b1${fmt(s.halfAtPeak, 1)}`, u: " MW",

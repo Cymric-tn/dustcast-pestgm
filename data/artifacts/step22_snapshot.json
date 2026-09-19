@@ -1,5 +1,5 @@
 {
- "issued_at": "2026-09-19T21:49:57.072871+01:00",
+ "issued_at": "2026-09-19T22:22:30.216908+01:00",
  "timezone": "Africa/Tunis",
  "model": "L0 physics",
  "config": {
@@ -14,8 +14,8 @@
   "archetypes_per_segment": 5,
   "spatial_rho": 0.4348313981141024
  },
- "context_hours": 69,
- "forecast_hours": 146,
+ "context_hours": 70,
+ "forecast_hours": 145,
  "peak": {
   "time": "2026-09-24T12:30:00+01:00",
   "mw": 452.6,
@@ -509,7 +509,7 @@
   {
    "time": "2026-09-19T21:30:00+01:00",
    "mw": 0.0,
-   "is_forecast": true,
+   "is_forecast": false,
    "low_illustrative": 0.0,
    "high_illustrative": 0.0
   },

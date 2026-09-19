@@ -207,7 +207,9 @@ J+3 & 6.74 & 5.72 & 4.67 & \textbf{3.78} & 3.97 \\
 \bottomrule
 \end{tabular}
 \caption{nMAE (\%) of AC capacity, 1{,}251 daylight hours, DKASC array 3.
-\textbf{Not an independent result} --- see the two warnings below.}
+\textbf{Array 3 was used for model and feature development, so these are
+development benchmarks, not independent results.} See the two warnings below,
+and \S\ref{sec:gen} for the same models on arrays never used in development.}
 \label{tab:hz}
 \end{table}
 
@@ -436,34 +438,43 @@ change what is possible here if accessible.
 Every number and figure is regenerated from scripts in the repository; no figure
 is drawn from retyped values.
 
-\begin{table}[H]
-\centering\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-\textbf{Dataset} & \textbf{Identity} & \textbf{Use} \\
-\midrule
-DKASC array 3 & \texttt{70-Site\_DKA-M5\_A-Phase}, 4.95/6.0\unit{kW}, az.\ 0\textdegree & training, horizons \\
-DKASC 16C & 1.98/2.5\unit{kW}, az.\ 90\textdegree & frozen evaluation, replay \\
-DKASC 16D & 1.98/2.5\unit{kW}, az.\ 280\textdegree \emph{(fitted, unverified)} & fresh evaluation \\
-Open-Meteo forecast & hourly, J+0\dots J+7 & live weather \\
-Open-Meteo historical forecast & archived runs, leads 1,2,3,5,7 & horizon evaluation \\
-Open-Meteo air quality & CAMS, \texttt{domains=cams\_global} & dust, AOD \\
-\bottomrule
-\end{tabular}
-\caption{Access as used by this prototype: no API key was required and no fee
-was paid. Open-Meteo's hosted free tier is for \textbf{non-commercial} use and
-is rate limited, so an operational deployment would need their commercial tier
-or a self-hosted equivalent. Alice Springs production spans 2008--2026 at
-5-minute resolution, resampled hourly with bins relabelled to their midpoint
-before solar geometry is evaluated.}
-\end{table}
-
 \textbf{Boundaries.} Horizon evaluation fits before 2025-03-30 and scores after
 (1{,}251 hours). The replay runs 2024-08 to 2026-02, refitting monthly, selecting
 on the 42 days before each boundary and scoring the month after. Interval
 calibration uses 11{,}246 daylight hours before 2025-03-30 across three arrays;
 coverage is scored after. Daylight is sun elevation $>5$\textdegree; all nMAE
 denominators are AC inverter capacity.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}llrl@{}}
+\toprule
+\textbf{Dataset} & \textbf{Provider export} & \textbf{Bytes} & \textbf{SHA-256 (16)} \\
+\midrule
+DKASC array 3 & src 70, \texttt{Site\_DKA-M5\_A-Phase} & 313{,}051{,}557 & \texttt{0cb0746fe5abda4e} \\
+DKASC 16C & src 105, \texttt{Site\_DKA-M1\_C-Phase} & 285{,}663{,}460 & \texttt{2b155248911195b2} \\
+DKASC 16D & src 81, \texttt{Site\_DKA-M2\_A-Phase} & 284{,}948{,}839 & \texttt{b829d6ce08612026} \\
+Open-Meteo forecast & hourly, J+0\dots J+7 & --- & live weather \\
+Open-Meteo hist.\ forecast & archived runs, leads 1,2,3,5,7 & --- & horizons \\
+Open-Meteo air quality & CAMS, \texttt{domains=cams\_global} & --- & dust, AOD \\
+\bottomrule
+\end{tabular}
+\caption{Array 3 is 4.95/6.0\unit{kW} at azimuth 0\textdegree; 16C and 16D are
+1.98/2.5\unit{kW} at 90\textdegree{} and 280\textdegree. All three remote
+\texttt{Content-Length} values match these files exactly, and the provider labels
+source 105 ``BP Solar, 2.0\,kW, poly-Si, Fixed, 2008, \textbf{East}'' and source
+81 the same but \textbf{West} --- so capacity and broad orientation are
+provider-confirmed. \textbf{The exact 280\textdegree{} bearing remains ours}:
+it was fitted on clear high-sun hours in 2015--2020, outside every evaluation
+window, and a ``west-facing'' label corroborates that bearing without
+independently verifying it. Access as used by this prototype: no API key was
+required and no fee was paid. Open-Meteo's hosted free tier is for \textbf{non-commercial} use and
+is rate limited, so an operational deployment would need their commercial tier
+or a self-hosted equivalent. Alice Springs production spans 2008--2026 at
+5-minute resolution, resampled hourly with bins relabelled to their midpoint
+before solar geometry is evaluated.}
+\end{table}
+
 
 \textbf{Commands.} Each script prints its own result table and writes a CSV to
 \texttt{data/artifacts/}.
@@ -517,8 +528,12 @@ interval. The snapshot holds \SnapContextH\ context hours and
 issue time of \SnapIssued, and its ``range at peak'' tile reads
 $\pm$\SnapPeakHalf\unit{MW} --- the same figures as \S3.3 and the API response
 below, which is the point of building all four from one snapshot. The band is
-labelled an illustrative range here too. The map sizes each governorate by
-forecast peak and colours it by aerosol optical depth.}
+labelled an illustrative range here too, and the map sizes each governorate by
+forecast peak and colours it by aerosol optical depth. The ``reserve to hold''
+tile is a \emph{scenario estimate}: the widest half-range anywhere in the
+displayed window, which falls in a low-sun hour (72.9\unit{MW} on a
+120\unit{MW} point) rather than at peak output, where the half-range is
+\SnapPeakHalf\unit{MW}. The two are consistent; they answer different questions.}
 \end{figure}
 
 \begin{table}[H]
@@ -573,10 +588,10 @@ fleet; they are not measurements of the Tunisian grid.
 \item \textbf{Soiling has no ground truth} and is presented as a relative index
 and maintenance trigger, never a measured loss.
 \item \textbf{J+4 to J+7 are produced but not evaluated.}
-\item \textbf{The dashboard is still fed by an earlier single-segment pipeline}
-(500\unit{MW} residential only) and has not yet been repointed at the service
-described here, so its figures do not match this report. Repointing it is the
-first task before the demo.
+\item \textbf{The dashboard is a static page rebuilt from a snapshot}, not a
+client polling the API. It is generated by the same pipeline as this report and
+reports the same capacity, model, issue time and range, but it refreshes when
+that pipeline is re-run, not on its own.
 \end{itemize}
 
 \section{Conclusion}
@@ -601,60 +616,6 @@ behaviour and the selection policy all still require validation. Access to
 Tunisian installation records and metered production would make that validation
 possible --- it would not by itself establish reliable performance.
 
-
-\section*{Repository and reproduction}
-\small
-\noindent\textbf{Repository} \hfill
-\texttt{<<< INSERT GITHUB URL BEFORE SUBMISSION >>>}\\
-\textbf{Dashboard} \hfill
-\texttt{<<< INSERT DASHBOARD URL BEFORE SUBMISSION >>>}
-
-\begin{verbatim}
-git clone <repository-url> && cd PESTGM
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-
-# Production data (~880 MB) is not committed. Exact provider exports:
-B=https://solarcentre.spinifexvalley.com.au/export
-curl -C - -o data/raw/dkasc_site03_5min.csv  $B/70-Site_DKA-M5_A-Phase.csv
-curl -C - -o data/raw/fleet/dka_16c_east.csv $B/105-Site_DKA-M1_C-Phase.csv
-curl -C - -o data/raw/fleet/dka_16d_west.csv $B/81-Site_DKA-M2_A-Phase.csv
-
-.venv/bin/python scripts/step16_replay.py        # learning loop  (Fig 2, Tab 4)
-.venv/bin/python scripts/step17_horizons.py      # horizons       (Tab 3)
-.venv/bin/python scripts/step21_national_uncertainty.py   # intervals (Tab 5)
-.venv/bin/python scripts/step18_district_national.py      # aggregation
-.venv/bin/python scripts/step20_report_figures.py         # every figure
-.venv/bin/uvicorn dustcast.api:app --port 8000            # the service
-.venv/bin/python scripts/step19_consumer.py               # API, end to end
-\end{verbatim}
-
-\begin{table}[H]
-\centering\footnotesize
-\begin{tabular}{@{}llrl@{}}
-\toprule
-\textbf{Array} & \textbf{Provider source} & \textbf{Bytes} & \textbf{SHA-256 (first 16)} \\
-\midrule
-3 & 70, \texttt{Site\_DKA-M5\_A-Phase} & 313{,}051{,}557 & \texttt{0cb0746fe5abda4e} \\
-16C & 105, \texttt{Site\_DKA-M1\_C-Phase} & 285{,}663{,}460 & \texttt{2b155248911195b2} \\
-16D & 81, \texttt{Site\_DKA-M2\_A-Phase} & 284{,}948{,}839 & \texttt{b829d6ce08612026} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\noindent\textbf{Provenance, resolved.} An earlier draft reported 16C and 16D as
-unidentified. The identifiers were recovered from the provider's download page,
-whose export links are written into \texttt{data-href} attributes by script, and
-all three remote \texttt{Content-Length} values match the local files exactly.
-The provider labels source 105 ``BP Solar, 2.0\,kW, poly-Si, Fixed, 2008,
-\textbf{East}'' and source 81 the same but \textbf{West}, which confirms the
-capacity and orientation of both. Array 16 is a deliberate orientation study
-(16A north, 16B flat, 16C east, 16D west). 16D's azimuth had been recovered by
-fitting before that label was found --- best fit 280\textdegree, on clear
-high-sun hours in 2015--2020, outside every evaluation window --- and the
-independent fit agrees with the provider's label, which is a check on the
-fitting method rather than a coincidence to conceal. Nothing about these two
-arrays is now provisional.
-\normalsize
 
 \section*{Sources}
 \footnotesize
