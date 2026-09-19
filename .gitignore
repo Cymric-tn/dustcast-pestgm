@@ -18,3 +18,8 @@ report/*.aux
 report/*.log
 report/*.out
 .DS_Store
+
+# Superseded deliverable: the .docx report predates the frozen evaluation and
+# still carries claims that were withdrawn. The current report is report/.
+*.docx
+~$*
