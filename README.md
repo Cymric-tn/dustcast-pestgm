@@ -272,10 +272,7 @@ output `ESTIMATED`.
 - **The ML does not currently improve accuracy** on unseen arrays. It ships
   because it is competitive month to month and because the selector makes its
   use conditional and visible — not because it wins.
-- **The dashboard is still fed by the earlier single-segment pipeline** (500 MW
-  residential only) and has not been repointed at the service described here,
-  so its figures do not match the report. Repointing it is the first task before
-  the demo.
+- **J+4 to J+7 are produced but not evaluated.**
 - **Capacity figures conflict.** ~500 MW residential (STEG, end-June 2026) is
   used here; the Ministry's "~400 MW installed vs 70 MW operational" appears to
   conflate pipeline with commissioned capacity.

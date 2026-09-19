@@ -11,6 +11,7 @@
 \usepackage{microtype}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xurl}
+\usepackage{verbatim}
 \usepackage{caption}
 \usepackage{enumitem}
 \usepackage{titlesec}
@@ -154,11 +155,10 @@ every hour of the day. Dividing by capacity makes the target dimensionless, so i
 can be learned on one array and spent on another.
 
 Capacities are reported consistently as \emph{DC module} / \emph{AC inverter}:
-array 3 is 4.95\unit{kW} DC on a 6.0\unit{kW} AC inverter, and array 16C is
-1.98\unit{kW} DC on 2.5\unit{kW} AC. Array 16D's capacity is
-\textbf{provisional}: its identity could not be confirmed with the provider, and
-we assumed it matches 16C from a comparison of peak output. Because capacity is
-the normalisation denominator, every 16D result inherits that assumption. Normalisation and all nMAE denominators
+array 3 is 4.95\unit{kW} DC on a 6.0\unit{kW} AC inverter; arrays 16C and 16D
+are both 1.98\unit{kW} DC on 2.5\unit{kW} AC. All three are confirmed against
+the provider's own listing (\S\ref{sec:repro}), so the normalisation denominator
+is measured rather than assumed. Normalisation and all nMAE denominators
 use AC.
 
 \subsection{Five competing models, and the loop that chooses between them}
@@ -207,11 +207,7 @@ J+3 & 6.74 & 5.72 & 4.67 & \textbf{3.78} & 3.97 \\
 \bottomrule
 \end{tabular}
 \caption{nMAE (\%) of AC capacity, 1{,}251 daylight hours, DKASC array 3.
-\textbf{Not an independent result}: array 3 is the array on which the feature set
-and hyperparameters were chosen. Day-block bootstrap intervals for the best ML
-model against L2 exclude zero at every horizon (J+0 $+24.7\%$, J+1 $+4.3\%$,
-J+2 $+17.6\%$, J+3 $+19.0\%$), which is consistent with those choices having been
-fitted to this array. \S\ref{sec:gen} tests the same models on arrays never seen.}
+\textbf{Not an independent result} --- see the two warnings below.}
 \label{tab:hz}
 \end{table}
 
@@ -290,11 +286,12 @@ Aggregating those site bands to a national figure is where the evidence runs
 out, and we label it accordingly. We combine regional widths with
 $\sqrt{\left(1+(n-1)\rho\right)/n}$, which recovers the plain sum at $\rho=1$ and
 the $\sqrt{n}$ reduction at $\rho=0$, taking $\rho$ as the mean pairwise
-correlation of the forecast clear-sky index across the 24 governorates
-($\rho\approx0.44$--$0.49$ depending on the weather window; 0.485 in the run
-reported here, a factor of 0.711 at $n=24$). At the modelled national peak that
-gives $\pm$72.3\unit{MW} on 454.4\unit{MW}, against 101.7\unit{MW} if errors were
-assumed perfectly correlated and 20.8\unit{MW} if independent.
+correlation of the forecast clear-sky index across the 24 governorates ($\rho=\SnapRho$ in the snapshot
+this report quotes throughout; it moves with the weather window). At the
+forecast peak of that snapshot the aggregated range is
+\SnapPeakRange\unit{MW} wide --- \textbf{$\pm$\SnapPeakHalf\unit{MW}} on
+\SnapPeakMW\unit{MW} --- against a summed width of 100.1\unit{MW} if errors were
+assumed perfectly correlated and 20.4\unit{MW} if independent.
 
 \textbf{This is an illustrative sensitivity calculation, and the national display
 is labelled as a range rather than a 90\,\% interval.} Three assumptions in it
@@ -307,14 +304,12 @@ forecast clear-sky \emph{index} as a proxy for forecast-\emph{error} correlation
 (clear-sky index correlation 0.444 against actual forecast-error correlation
 0.089 on the same data, and 0.607 in summer against 0.022 in winter).
 
-\keybox{\textbf{What Table~\ref{tab:cov} does and does not establish.} It
-establishes the L0 band's out-of-sample coverage on three arrays at a single
-Australian facility --- not three independent sites, and not a spatial test. It
-does \emph{not} establish national coverage over Tunisia, for the three reasons
-above. This caveat travels with the number: it is printed beneath the national
-chart and returned in every API payload that carries the range, where the bounds
-are named \texttt{low\_illustrative} and \texttt{high\_illustrative} so a
-downstream tool cannot mistake them for calibrated interval bounds.}
+\keybox{Table~\ref{tab:cov} establishes out-of-sample coverage on three arrays
+at \emph{one} Australian facility --- not three independent sites, and not a
+spatial test. National coverage over Tunisia is not established. The caveat
+travels with the number: it labels the dashboard and the chart, and every API
+payload carrying the range names its bounds \texttt{low\_illustrative} and
+\texttt{high\_illustrative}.}
 
 \subsection{Generalisation across arrays}
 \label{sec:gen}
@@ -436,6 +431,7 @@ commissioning records and inverter production histories, which would materially
 change what is possible here if accessible.
 
 \section{Reproducibility}
+\label{sec:repro}
 
 Every number and figure is regenerated from scripts in the repository; no figure
 is drawn from retyped values.
@@ -502,12 +498,27 @@ behaviour, derive ramp and reserve quantities, and write a handoff file.
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{fig_forecast.pdf}
-\caption{The product: national forecast across J+0 to J+3 under the simulated
-fleet. The shaded band is the \textbf{illustrative range} of \S3.3, not a
-validated 90\,\% interval. The \emph{forecast issue time} is stamped in the chart
-title and is what J+0 is counted from; the \texttt{generated\_at} field in the
-API example below is the time that \emph{response} was built, which is a
-different thing and will not generally match.}
+\caption{The product, from the snapshot issued \SnapIssued\ that every number
+in this report is drawn from. The red line is the \textbf{issue time}, and J+0
+is counted from it. Hours to its left are \textbf{context}: values recomputed
+from archived weather for elapsed hours, drawn in grey and \emph{not} forecasts
+of those hours --- a freshly generated estimate for an hour that has already
+passed is not an operational forecast of it. The shaded band on the forecast
+side is the \textbf{illustrative range} of \S3.3, not a validated 90\,\%
+interval. The snapshot holds \SnapContextH\ context hours and
+\SnapForecastH\ forecast hours.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{fig_dashboard.png}
+\caption{The operator dashboard, rendered from the same snapshot
+(\S\ref{sec:repro} regenerates it). It reports 630\unit{MW} installed and an
+issue time of \SnapIssued, and its ``range at peak'' tile reads
+$\pm$\SnapPeakHalf\unit{MW} --- the same figures as \S3.3 and the API response
+below, which is the point of building all four from one snapshot. The band is
+labelled an illustrative range here too. The map sizes each governorate by
+forecast peak and colours it by aerosol optical depth.}
 \end{figure}
 
 \begin{table}[H]
@@ -531,20 +542,11 @@ different thing and will not generally match.}
 can see what the numbers are worth rather than having to trust them.}
 \end{table}
 
-\begin{verbatim}
-$ curl -s localhost:8000/forecast/national
-{ "generated_at": "2026-09-19T21:24:57+01:00", "rebuilt_on_this_request": false,
-  "units": "MW (AC)", "model": "L0 physics",
-  "fleet": "SIMULATED -- no installation registry available to this project",
-  "evaluated_horizons": ["J+0","J+1","J+2","J+3"],
-  "uncertainty": {
-    "status": "ILLUSTRATIVE -- not a validated interval",
-    "caveat": "ILLUSTRATIVE RANGE, NOT A VALIDATED 90% INTERVAL. ...",
-    "spatial_correlation_rho": 0.4348,
-    "rho_source": "forecast clear-sky index, as a proxy for error correlation" },
-  "series": [ {"time": "2026-09-19T12:30:00+01:00", "mw": 452.6,
-               "low_illustrative": 423.1, "high_illustrative": 482.1}, ... ] }
-\end{verbatim}
+\verbatiminput{api_example.txt}
+\vspace{-0.4em}
+{\footnotesize A response captured from the running service by
+\texttt{step22\_snapshot.py}, not transcribed by hand. Its \texttt{generated\_at}
+is when that \emph{response} was built and is not the forecast issue time.}
 
 Provenance travels with the numbers: a downstream tool that silently treated a
 simulated national total as a metered one is the failure mode this interface
@@ -612,10 +614,10 @@ git clone <repository-url> && cd PESTGM
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 # Production data (~880 MB) is not committed. Exact provider exports:
-curl -C - -o data/raw/dkasc_site03_5min.csv \
-  https://solarcentre.spinifexvalley.com.au/export/70-Site_DKA-M5_A-Phase.csv
-curl -C - -o data/raw/fleet/dka_16c_east.csv \
-  https://solarcentre.spinifexvalley.com.au/export/<id>-Site_DKA-M1_C-Phase.csv
+B=https://solarcentre.spinifexvalley.com.au/export
+curl -C - -o data/raw/dkasc_site03_5min.csv  $B/70-Site_DKA-M5_A-Phase.csv
+curl -C - -o data/raw/fleet/dka_16c_east.csv $B/105-Site_DKA-M1_C-Phase.csv
+curl -C - -o data/raw/fleet/dka_16d_west.csv $B/81-Site_DKA-M2_A-Phase.csv
 
 .venv/bin/python scripts/step16_replay.py        # learning loop  (Fig 2, Tab 4)
 .venv/bin/python scripts/step17_horizons.py      # horizons       (Tab 3)
@@ -626,11 +628,32 @@ curl -C - -o data/raw/fleet/dka_16c_east.csv \
 .venv/bin/python scripts/step19_consumer.py               # API, end to end
 \end{verbatim}
 
-\noindent Array 3's export identifier is given above and verified. \textbf{The
-16C and 16D identifiers are not}: they were downloaded in an earlier session
-without a recorded command, and the provider's Alice Springs listing has no
-entry matching the local filenames. 16D's geometry was recovered by fitting, its
-capacity assumed. Both are stated as provisional wherever their results appear.
+\begin{table}[H]
+\centering\footnotesize
+\begin{tabular}{@{}llrl@{}}
+\toprule
+\textbf{Array} & \textbf{Provider source} & \textbf{Bytes} & \textbf{SHA-256 (first 16)} \\
+\midrule
+3 & 70, \texttt{Site\_DKA-M5\_A-Phase} & 313{,}051{,}557 & \texttt{0cb0746fe5abda4e} \\
+16C & 105, \texttt{Site\_DKA-M1\_C-Phase} & 285{,}663{,}460 & \texttt{2b155248911195b2} \\
+16D & 81, \texttt{Site\_DKA-M2\_A-Phase} & 284{,}948{,}839 & \texttt{b829d6ce08612026} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Provenance, resolved.} An earlier draft reported 16C and 16D as
+unidentified. The identifiers were recovered from the provider's download page,
+whose export links are written into \texttt{data-href} attributes by script, and
+all three remote \texttt{Content-Length} values match the local files exactly.
+The provider labels source 105 ``BP Solar, 2.0\,kW, poly-Si, Fixed, 2008,
+\textbf{East}'' and source 81 the same but \textbf{West}, which confirms the
+capacity and orientation of both. Array 16 is a deliberate orientation study
+(16A north, 16B flat, 16C east, 16D west). 16D's azimuth had been recovered by
+fitting before that label was found --- best fit 280\textdegree, on clear
+high-sun hours in 2015--2020, outside every evaluation window --- and the
+independent fit agrees with the provider's label, which is a check on the
+fitting method rather than a coincidence to conceal. Nothing about these two
+arrays is now provisional.
 \normalsize
 
 \section*{Sources}

@@ -48,6 +48,18 @@ def _conformal_quantile(scores: np.ndarray, level: float) -> float:
     return float(np.quantile(s, q, method="higher"))
 
 
+def _bin_index(values: pd.Series, edges: list[float]) -> pd.Series:
+    """Bin to an INTEGER index, not a pandas Interval.
+
+    Interval categories do not survive a CSV round-trip: reloading them gives
+    strings, a merge against freshly cut Intervals matches nothing, and every
+    row silently falls back to the overall quantile -- which made the served
+    band flat and ~1.75x too wide. Integers round-trip exactly.
+    """
+    return pd.Series(np.digitize(values.to_numpy(float), edges[1:-1]),
+                     index=values.index).where(values.notna())
+
+
 def fit_l0_band(parts: list[tuple[pd.DataFrame, Site]],
                 level: float = 0.90) -> pd.DataFrame:
     """Calibrate an L0 interval on arrays that HAVE measured production.
@@ -64,19 +76,24 @@ def fit_l0_band(parts: list[tuple[pd.DataFrame, Site]],
         err = (f["expected_kw"].clip(lower=0.0) - f["ac_power_kw"]).abs() / cap
         rows.append(pd.DataFrame({
             "score": err,
-            "elev": pd.cut(f["solar_elevation"], ELEVATION_BINS),
-            "kt": pd.cut(f.get("clearsky_index", pd.Series(1.0, index=f.index)),
-                         KT_BINS),
+            "elev": _bin_index(f["solar_elevation"], ELEVATION_BINS),
+            "kt": _bin_index(
+                f.get("clearsky_index", pd.Series(1.0, index=f.index)), KT_BINS),
         }))
     d = pd.concat(rows).dropna(subset=["score"])
 
     overall = _conformal_quantile(d["score"].to_numpy(), level)
-    out = (d.groupby(["elev", "kt"], observed=True)["score"]
+    out = (d.dropna(subset=["elev", "kt"])
+             .groupby(["elev", "kt"], observed=True)["score"]
              .agg(n="size", offset=lambda s: _conformal_quantile(s.to_numpy(), level))
              .reset_index())
     # A bin calibrated on a handful of hours is noise, not calibration.
     out.loc[out["n"] < 50, "offset"] = overall
     out["offset"] = out["offset"].fillna(overall)
+    # Carried as a COLUMN as well as an attr: DataFrame.attrs does not survive
+    # to_csv, and the fallback must round-trip with the table.
+    out["overall"] = overall
+    out["level"] = level
     out.attrs["overall"] = overall
     out.attrs["level"] = level
     return out
@@ -86,13 +103,18 @@ def apply_l0_band(frame: pd.DataFrame, site: Site,
                   band: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
     """Half-width in kW for each hour, as (lower, upper) power bounds."""
     cap = site.ac_capacity_w / 1000.0
-    elev = pd.cut(frame["solar_elevation"], ELEVATION_BINS)
-    kt = pd.cut(frame.get("clearsky_index", pd.Series(1.0, index=frame.index)),
-                KT_BINS)
-    key = pd.DataFrame({"elev": elev, "kt": kt}).merge(
-        band[["elev", "kt", "offset"]], on=["elev", "kt"], how="left")
-    off = pd.Series(key["offset"].to_numpy(), index=frame.index).fillna(
-        band.attrs.get("overall", 0.0)) * cap
+    lookup = {(int(r.elev), int(r.kt)): float(r.offset)
+              for r in band.itertuples()}
+    fallback = float(band.attrs.get("overall",
+                                    band["overall"].iloc[0] if "overall" in band
+                                    else 0.0))
+    elev = _bin_index(frame["solar_elevation"], ELEVATION_BINS)
+    kt = _bin_index(
+        frame.get("clearsky_index", pd.Series(1.0, index=frame.index)), KT_BINS)
+    off = pd.Series(
+        [lookup.get((int(e), int(k)), fallback) if pd.notna(e) and pd.notna(k)
+         else fallback for e, k in zip(elev, kt)],
+        index=frame.index) * cap
 
     point = frame["expected_kw"].clip(lower=0.0)
     night = frame["solar_elevation"] <= 0.0

@@ -189,9 +189,7 @@ def _national_range(weathers, dists, index) -> tuple[pd.Series | None, float | N
     if not path.exists():
         return None, None
     band = pd.read_csv(path)
-    band["elev"] = pd.Categorical(band["elev"])
-    band["kt"] = pd.Categorical(band["kt"])
-    band.attrs["overall"] = float(band["offset"].median())
+    band.attrs["overall"] = float(band["overall"].iloc[0])
 
     cap_by_gov = {g.key: sum(d.capacity_mw for d in dists if d.governorate == g.key)
                   for g in tunisia.GOVERNORATES}

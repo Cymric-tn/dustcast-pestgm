@@ -11,6 +11,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import json
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -68,9 +70,12 @@ MACROS: dict[str, str] = {}
 
 def fig_netload() -> None:
     """Where rooftop PV actually bites: the evening ramp, not a midday belly."""
-    n = pd.read_csv(ARTIFACTS / "step18_national.csv", index_col=0,
-                    parse_dates=True)["national_mw"]
-    n.index = pd.DatetimeIndex(n.index)
+    # Same snapshot as the forecast chart, so the ramp numbers quoted in the
+    # prose describe the forecast the report actually shows.
+    snap = json.loads((ARTIFACTS / "step22_snapshot.json").read_text())
+    d = pd.DataFrame(snap["series"])
+    d["time"] = pd.DatetimeIndex(d["time"])
+    n = d.set_index("time")["mw"]
     demand = dispatch.demand_series(n.index, PEAK_LOAD_MW)
     net = demand - n
 
@@ -125,36 +130,53 @@ def fig_netload() -> None:
 
 
 def fig_forecast() -> None:
-    """The product: national forecast with its interval, over J+0..J+3."""
-    d = pd.read_csv(ARTIFACTS / "step21_national_band.csv", index_col=0,
-                    parse_dates=True)
-    d.index = pd.DatetimeIndex(d.index)
-    # J+0 must be TODAY. The series carries two days of hindcast (the service
-    # requests past_days=2), and starting the window at the series minimum
-    # would label those past days J+0..J+1 -- presenting hindcast as forecast.
-    now = pd.Timestamp.now(tz=d.index.tz)
-    start = now.normalize()
-    d = d[(d.index >= start) & (d.index < start + pd.Timedelta("4D"))]
+    """The product, drawn from the frozen snapshot -- never from a fresh run.
 
-    fig, ax = plt.subplots(figsize=(9.2, 3.2))
-    half = d["width_mw"] / 2.0
-    ax.fill_between(d.index, (d["point_mw"] - half).clip(lower=0),
-                    d["point_mw"] + half, color="#1f77b4", alpha=0.22,
+    The snapshot carries its own issue time. Hours before it are CONTEXT: values
+    recomputed from archived weather, not operational forecasts of those hours.
+    They are drawn in grey and separated by the issue-time marker, because a
+    newly generated estimate for an elapsed hour is not a forecast of it.
+    """
+    snap = json.loads((ARTIFACTS / "step22_snapshot.json").read_text())
+    issued = pd.Timestamp(snap["issued_at"])
+    d = pd.DataFrame(snap["series"])
+    d["time"] = pd.DatetimeIndex(d["time"])
+    d = d.set_index("time")
+
+    lo = issued.normalize() - pd.Timedelta("1D")
+    d = d[(d.index >= lo) & (d.index < issued.normalize() + pd.Timedelta("4D"))]
+    fc = d[d["is_forecast"]]
+    ctx = d[~d["is_forecast"]]
+
+    fig, ax = plt.subplots(figsize=(9.2, 3.3))
+    if not ctx.empty:
+        ax.plot(ctx.index, ctx["mw"], color="#9a9a9a", lw=1.5,
+                label="context (recomputed from archived weather, not a forecast)")
+    ax.fill_between(fc.index, fc["low_illustrative"], fc["high_illustrative"],
+                    color="#1f77b4", alpha=0.22,
                     label="illustrative range (aggregated, NOT a validated interval)")
-    ax.plot(d.index, d["point_mw"], color="#1f77b4", lw=1.9,
-            label="national point forecast")
+    ax.plot(fc.index, fc["mw"], color="#1f77b4", lw=1.9, label="forecast")
 
+    ax.axvline(issued, color="#d62728", lw=1.4)
+    ax.annotate(f"forecast issued\n{issued:%Y-%m-%d %H:%M}",
+                xy=(issued, ax.get_ylim()[1] * 0.92), xytext=(7, 0),
+                textcoords="offset points", fontsize=7.5, color="#d62728",
+                va="top")
+
+    # J+n counted from the issue time, not from the start of the series.
     for k in range(4):
-        t = start + pd.Timedelta(days=k)
-        ax.axvline(t, color="#999", lw=0.7, ls=":")
-        ax.text(t + pd.Timedelta("1h"), ax.get_ylim()[1] * 0.02, f"J+{k}",
+        t = issued.normalize() + pd.Timedelta(days=k)
+        if t < d.index.min():
+            continue
+        ax.axvline(t, color="#bbb", lw=0.7, ls=":")
+        ax.text(t + pd.Timedelta("1h"), ax.get_ylim()[1] * 0.04, f"J+{k}",
                 fontsize=7.5, color="#666")
 
+    p = snap["peak"]
     ax.set_ylabel("MW")
-    ax.set_title(f"National rooftop PV forecast, J+0 to J+3 "
-                 f"(forecast issued {now:%Y-%m-%d %H:%M %Z})",
-                 fontsize=10, pad=10)
-    ax.legend(fontsize=8, frameon=False, loc="upper left")
+    ax.set_title(f"National rooftop PV, J+0 to J+3 \u2014 snapshot issued "
+                 f"{issued:%Y-%m-%d %H:%M %Z}", fontsize=10, pad=10)
+    ax.legend(fontsize=7.5, frameon=False, loc="upper left", ncol=1)
     ax.grid(alpha=0.25, lw=0.6)
     ax.margins(x=0.01)
     for sp in ("top", "right"):
@@ -162,6 +184,16 @@ def fig_forecast() -> None:
     fig.autofmt_xdate()
     fig.tight_layout()
     fig.savefig(OUT / "fig_forecast.pdf")
+
+    MACROS["SnapIssued"] = f"{issued:%Y-%m-%d %H:%M}"
+    MACROS["SnapPeakMW"] = f"{p['mw']:,.1f}"
+    MACROS["SnapPeakHalf"] = f"{p['half_width_mw']:,.1f}"
+    MACROS["SnapPeakRange"] = f"{p['range_mw']:,.1f}"
+    MACROS["SnapRho"] = f"{snap['config']['spatial_rho']:.3f}"
+    MACROS["SnapFleetMW"] = f"{snap['config']['fleet_mw']:.0f}"
+    MACROS["SnapUnits"] = f"{snap['config']['districts']}"
+    MACROS["SnapContextH"] = f"{snap['context_hours']}"
+    MACROS["SnapForecastH"] = f"{snap['forecast_hours']}"
     print(f"  wrote {OUT / 'fig_forecast.pdf'}")
 
 

@@ -189,41 +189,34 @@ DKASC_SITE_16C = Site(
     eta_inv_nom=0.96,
     commissioned="2008-11-11",
     temperature_model="open_rack_glass_glass",
-    raw_file="fleet/dka_16c_east.csv",
-    notes=("Frozen holdout. Never used for training, tuning or inspection.",),
+    raw_file="fleet/dka_16c_east.csv",   # source 105, M1_C-Phase
+    notes=(
+        "Used once as the frozen holdout (step 14); no longer untouched.",
+        "Identity CONFIRMED: source 105, 105-Site_DKA-M1_C-Phase.csv, byte-exact.",
+        "Provider labels it 2.0 kW BP Solar poly-Si fixed, 2008, East.",
+    ),
 )
 
 #: DKASC array 16D -- the least-contaminated evaluation array available.
 #:
-#: NOT a verified installation. Provenance is weak and is recorded here rather
-#: than implied:
+#: PROVENANCE RESOLVED 2026-09-19. Earlier versions of this file recorded the
+#: identity as unknown because no download command had been kept. It has since
+#: been recovered from the provider's own download page, whose export links are
+#: written by script into `data-href` attributes:
 #:
-#:   IDENTITY    unknown. The local filename `dka_16d_west.csv` is a label from
-#:               an earlier session with no download script recorded, and DKASC's
-#:               Alice Springs listing has NO M1 D-phase. The provider page for
-#:               the assumed code returns 404. The array is therefore identified
-#:               only by its own behaviour.
-#:   GEOMETRY    FITTED, not published. Tilt and azimuth were recovered by
-#:               maximising correlation between measured output and modelled
-#:               plane-of-array irradiance over 14,012 clear high-sun hours,
-#:               restricted to 2015-2020 -- years before any evaluation window,
-#:               so this fit does not touch evaluation data. Best fit azimuth
-#:               280 deg (r=0.987); the diurnal profile is a near mirror image of
-#:               16C's, peaking at 13-14h where 16C peaks at 10-11h. The same fit
-#:               returned tilt 25 deg for BOTH arrays against a published 20 deg
-#:               for 16C; on a 5 deg grid that is consistent with either, and the
-#:               published value is kept.
-#:   CAPACITY    ASSUMED EQUAL TO 16C, from a max/p99.9 power comparison over the
-#:               full record (2.184 vs 2.226 kW max). That comparison DID read
-#:               the evaluation period, as an aggregate over all years. A
-#:               west-facing profile does not establish either identity or
-#:               capacity, and capacity feeds the residual normalisation
-#:               directly, so any transfer result using this array inherits the
-#:               assumption.
+#:   array 3   source 70,  70-Site_DKA-M5_A-Phase.csv   313,051,557 B
+#:   16C       source 105, 105-Site_DKA-M1_C-Phase.csv  285,663,460 B
+#:   16D       source 81,  81-Site_DKA-M2_A-Phase.csv   284,948,839 B
 #:
-#: Untouched status: never used for fitting or model selection, and not inspected
-#: before its first evaluation beyond the two items above. Weaker than "frozen",
-#: and stated that way.
+#: All three remote Content-Lengths match the local files byte for byte. The
+#: provider labels source 105 "BP Solar, 2.0kW, poly-Si, Fixed, 2008, East" and
+#: source 81 "... West", which CONFIRMS both capacity and orientation.
+#:
+#: The azimuth below was fitted from data before that label was found (best fit
+#: 280 deg, r=0.987, on 14,012 clear high-sun hours in 2015-2020, outside every
+#: evaluation window). The independent fit and the provider label agree, which
+#: is a useful check on the fitting method rather than a coincidence to hide.
+#: Tilt is the published 20 deg; the same fit preferred 25 deg on a 5 deg grid.
 DKASC_SITE_16D = Site(
     key="dkasc_site16d",
     name="DKASC Alice Springs #16D - BP Solar 1.98kW poly-Si fixed, WEST facing",
@@ -239,12 +232,11 @@ DKASC_SITE_16D = Site(
     eta_inv_nom=0.96,
     commissioned="2008-11-11",
     temperature_model="open_rack_glass_glass",
-    raw_file="fleet/dka_16d_west.csv",
+    raw_file="fleet/dka_16d_west.csv",   # source 81, M2_A-Phase
     notes=(
-        "Identity unverified; geometry fitted; capacity ASSUMED equal to 16C.",
-        "Geometry fitted on 2015-2020, outside every evaluation window.",
-        "Capacity inferred from a full-record power comparison that did read "
-        "the evaluation period as an aggregate.",
+        "Identity CONFIRMED: source 81, 81-Site_DKA-M2_A-Phase.csv, byte-exact.",
+        "Provider labels it 2.0 kW BP Solar poly-Si fixed, 2008, West.",
+        "Azimuth 280 deg was fitted independently and agrees with that label.",
         "Record ends 2025-09-04, earlier than 16C's 2026-02-19.",
     ),
 )

@@ -184,8 +184,8 @@ td.name{font-weight:500}
   <header class="mast">
     <div>
       <h1>DustCast <span>Grid Desk</span></h1>
-      <p>Rooftop PV that STEG cannot meter, forecast 48 hours ahead with a
-         calibrated 90% band — and what to do about it.</p>
+      <p>Rooftop PV that STEG cannot meter, forecast up to a week ahead with an
+          illustrative uncertainty range — and what to do about it.</p>
     </div>
     <div class="stamp" id="stamp"></div>
   </header>
@@ -201,7 +201,7 @@ td.name{font-weight:500}
         </div>
         <div class="ctl">
           <button id="btnNat">National</button>
-          <button id="btnDust" aria-pressed="false">Dust model off</button>
+          <button id="btnDust" aria-pressed="false" hidden>Dust model off</button>
         </div>
       </div>
       <div class="controls">
@@ -221,7 +221,10 @@ td.name{font-weight:500}
       <div class="pbody">
         <div class="legend">
           <span><i style="background:var(--forecast)"></i>Forecast</span>
-          <span><i class="sw-band"></i>90% band</span>
+          <span><i class="sw-band"></i>illustrative range</span>
+          <!-- The national layer runs L0 physics on Open-Meteo irradiance, which
+       already embeds aerosol effects; there is no dust term to switch off,
+       so this ablation is not offered. Dust stays on the map as context. -->
           <span id="legDust" hidden><i style="background:var(--dust)"></i>Dust model off</span>
         </div>
         <div class="chartbox">
@@ -315,7 +318,7 @@ let winLen = M.horizon_hours;                  // hours shown
 let winStart = NOW;                            // index of the window's first hour
 
 $("#stamp").innerHTML =
-  `<b>${M.generated}</b><br>${(M.confidence*100).toFixed(0)}% band · ` +
+  `<b>issued ${M.generated}</b><br>illustrative range · ` +
   `${M.history_days} d history + ${(N.t.length - NOW - 1)} h forecast` +
   `<br>${fmt(M.installed_mw)} MW installed rooftop`;
 
@@ -341,9 +344,11 @@ function windowStats(a, b) {
     if (d < down) down = d;
     if (d > up) up = d;
   }
-  const e = pt.reduce((x, y) => x + y, 0), eOff = off.reduce((x, y) => x + y, 0);
-  return { peak, peakAt: N.t[a + peakI], reserve, down, up,
-           dust: eOff ? (e / eOff - 1) * 100 : 0 };
+  // Half-width of the illustrative range at the peak hour -- the band's own
+  // size there, not a ramp difference.
+  const up_ = N.upper.slice(a, b);
+  const halfAtPeak = (up_[peakI] - lo[peakI]) / 2;
+  return { peak, peakAt: N.t[a + peakI], reserve, down, up, halfAtPeak };
 }
 const stamp = (iso) => new Date(iso).toLocaleString("en",
   { weekday: "short", day: "numeric", month: "short", hour: "2-digit",
@@ -358,8 +363,8 @@ function drawTiles(a, b) {
       s: "sized off the band's lower edge" },
     { k: "Worst 3 h ramp", v: fmt(Math.abs(s.down), 0), u: " MW",
       s: `down · +${fmt(s.up, 0)} MW up` },
-    { k: "Dust costs", v: s.dust.toFixed(1), u: " %",
-      s: "vs the same forecast, dust model off" },
+    { k: "Range at peak", v: `\u00b1${fmt(s.halfAtPeak, 1)}`, u: " MW",
+      s: "illustrative, not a validated interval" },
   ].map(t => `<div class="tile${t.lead ? " lead" : ""}">
       <span class="k">${t.k}</span>
       <span class="v">${t.v}<span style="font-size:15px;color:var(--ink-3)">${t.u}</span></span>
@@ -448,7 +453,7 @@ function drawChart() {
     tip.innerHTML =
       `<div class="t">${stamp(t[i])}${a + i <= NOW ? " · hindcast" : ""}</div>
        <div class="r"><span>Forecast</span><b style="color:var(--forecast)">${fmt(pt[i], 1)} MW</b></div>
-       <div class="r"><span>90% band</span><b>${fmt(lo[i], 1)}–${fmt(up[i], 1)}</b></div>` +
+       <div class="r"><span>illustrative range</span><b>${fmt(lo[i], 1)}–${fmt(up[i], 1)}</b></div>` +
       (dustOff ? `<div class="r"><span>Dust off</span><b style="color:var(--dust)">${fmt(off[i], 1)}</b></div>` : "");
   });
   svg.querySelector("#hit").addEventListener("pointerleave", () => {

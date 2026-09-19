@@ -1,0 +1,13 @@
+$ curl -s localhost:8000/forecast/national
+{ "generated_at": "2026-09-19T21:49:57+01:00",
+  "units": "MW (AC)", "model": "L0 physics",
+  "fleet": "SIMULATED -- no installation registry available to this project",
+  "evaluated_horizons": ["J+0", "J+1", "J+2", "J+3"],
+  "uncertainty": {
+    "status": "ILLUSTRATIVE -- not a validated interval",
+    "caveat": "ILLUSTRATIVE RANGE, NOT A VALIDATED 90% INTERV...",
+    "spatial_correlation_rho": 0.4348 },
+  "series": [ { "time": "2026-09-24T12:30:00+01:00",
+               "mw": 452.6187,
+               "low_illustrative": 418.7306,
+               "high_illustrative": 486.5068 }, ... ] }
