@@ -23,3 +23,6 @@ report/*.out
 # still carries claims that were withdrawn. The current report is report/.
 *.docx
 ~$*
+
+# Local editor/session config; removed from the published repo.
+.claude/
