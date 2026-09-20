@@ -61,7 +61,13 @@ def check() -> int:
     page = (ROOT / "dashboard/dustcast.html").read_text()
     payload = json.loads((ROOT / "data/artifacts/step6_dashboard.json").read_text())
 
+    rendered_path = ROOT / "data/artifacts/step24_rendered.json"
+    rendered = json.loads(rendered_path.read_text()) if rendered_path.exists() else {}
+
     checks = [
+        ("screenshot is the LIVE page", rendered.get("feed") == "api"),
+        ("screenshot issue time", rendered.get("issued") == issued),
+        ("screenshot fleet MW", rendered.get("installed") == fleet),
         ("macros issue time", f"{{{issued}}}" in macros),
         ("macros half-width", f"{{{half}}}" in macros),
         ("dashboard issue time", issued in page),

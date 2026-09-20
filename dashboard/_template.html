@@ -316,22 +316,37 @@ td.name{font-weight:500}
 </div>
 
 <script>
-const DATA = /*__DATA__*/null;
+// The copy baked in at build time. It is the OFFLINE FALLBACK: the page shows
+// it immediately, then replaces it with a live fetch from the API if one is
+// reachable. That way the same file works as a live client and as a standalone
+// artifact, and the masthead says which it is currently showing.
+let DATA = /*__DATA__*/null;
 const $ = (s) => document.querySelector(s);
 const fmt = (v, d = 0) => v.toLocaleString("en", {minimumFractionDigits: d, maximumFractionDigits: d});
 
 /* ---------- masthead ---------- */
-const M = DATA.meta, N = DATA.national, D = DATA.decisions;
-const NOW = M.now_index;                       // index of the forecast boundary
+let M = DATA.meta, N = DATA.national, D = DATA.decisions;
+let NOW = M.now_index;                       // index of the forecast boundary
 let current = null;                            // null = national
 let dustOff = false;
 let winLen = M.horizon_hours;                  // hours shown
 let winStart = NOW;                            // index of the window's first hour
 
-$("#stamp").innerHTML =
-  `<b>issued ${M.generated}</b><br>illustrative range · ` +
-  `${M.history_days} d history + ${(N.t.length - NOW - 1)} h forecast` +
-  `<br>${fmt(M.installed_mw)} MW installed rooftop`;
+// "connecting" until the first fetch resolves. Saying "no API reachable" while
+// a request is still in flight reports a failure that has not happened.
+let feedState = "connecting";
+function drawStamp() {
+  const tag = M.source === "api"
+    ? `<span style="color:var(--accent)">live · /dashboard</span>`
+    : feedState === "connecting" ? `snapshot · connecting…`
+    : feedState === "offline"    ? `snapshot · no API configured`
+    : `snapshot · API unreachable`;
+  $("#stamp").innerHTML =
+    `<b>issued ${M.generated}</b><br>${tag} · illustrative range` +
+    `<br>${M.history_days} d history + ${(N.t.length - NOW - 1)} h forecast` +
+    `<br>${fmt(M.installed_mw)} MW installed rooftop`;
+}
+drawStamp();
 
 /* ---------- window helpers ---------- */
 function series() {
@@ -634,7 +649,7 @@ function drawRows() {
 
 /* ---------- wiring ---------- */
 function select(key) { current = current === key ? null : key; render(); }
-function render() { drawChart(); drawMap(); drawRows(); }
+function render() { drawStamp(); drawChart(); drawMap(); drawRows(); }
 
 const nearestIndex = (iso) => {
   const target = new Date(iso).getTime();
@@ -673,4 +688,39 @@ $("#btnDusty").addEventListener("click", () => {
 });
 render();
 addEventListener("resize", drawChart);
+
+/* ---------- live data ---------- */
+// Same origin by default, so serving the page from the API just works. A
+// different host can be pointed at with ?api=http://host:port, which is what the
+// demo uses when the page is opened from a file or a static host.
+const API = new URLSearchParams(location.search).get("api")
+  ?? (location.protocol.startsWith("http") ? "" : null);
+const POLL_MS = 5 * 60 * 1000;
+
+async function refresh() {
+  if (API === null) { feedState = "offline"; drawStamp(); return false; }
+  try {
+    const r = await fetch(`${API}/dashboard`, { cache: "no-store" });
+    if (!r.ok) { feedState = "failed"; drawStamp(); return false; }
+    const next = await r.json();
+    if (!next?.national?.t?.length) { feedState = "failed"; drawStamp(); return false; }
+    // Keep the view where the operator left it unless the horizon moved.
+    const wasAtNow = winStart === NOW;
+    DATA = next;
+    M = DATA.meta; N = DATA.national; D = DATA.decisions;
+    NOW = M.now_index;
+    if (wasAtNow) winStart = NOW;
+    if (current !== null && !DATA.governorates.some(g => g.key === current)) {
+      current = null;                         // that region is gone from the feed
+    }
+    render();
+    return true;
+  } catch {
+    feedState = "failed"; drawStamp();
+    return false;                             // stay on the baked-in copy
+  }
+}
+
+refresh();
+setInterval(refresh, POLL_MS);
 </script>

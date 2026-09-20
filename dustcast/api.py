@@ -21,9 +21,14 @@ Two design choices worth defending:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
+from . import dashboard as dashboard_payload
 from . import fleet, service, tunisia
 
 app = FastAPI(
@@ -33,7 +38,16 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Read-only public forecast data, and the page may be opened from a static host
+# or an artifact that points back here with ?api=. Nothing here is written, and
+# no credentials are accepted, so a permissive policy costs nothing.
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
 GOV_KEYS = {g.key: g for g in tunisia.GOVERNORATES}
+DASHBOARD = Path(__file__).resolve().parent.parent / "dashboard" / "dustcast.html"
 
 
 def _series_payload(s: pd.Series, start: str | None, end: str | None,
@@ -82,6 +96,20 @@ def _envelope(bundle: service.ForecastBundle, rebuilt: bool, **extra) -> dict:
         "caveats": list(bundle.notes),
         **extra,
     }
+
+
+@app.get("/", include_in_schema=False)
+def operator_page() -> FileResponse:
+    """The operator dashboard, served from the same origin as its data.
+
+    Serving the page here means the browser fetches /dashboard same-origin, so
+    the demo is one command and there is no cross-origin step to explain.
+    """
+    if not DASHBOARD.exists():
+        raise HTTPException(503, "dashboard not built; run "
+                                 "scripts/step23_dashboard_export.py then "
+                                 "scripts/step6_build_dashboard.py")
+    return FileResponse(DASHBOARD, media_type="text/html")
 
 
 @app.get("/health")
@@ -198,6 +226,22 @@ def selection() -> dict:
         "history": [{"period": str(i), "selected": r["selected"]}
                     for i, r in sel.iterrows()],
     }
+
+
+@app.get("/dashboard")
+def dashboard() -> dict:
+    """Everything the operator page draws, in one request.
+
+    The page fetches this on load and on a timer. It falls back to the copy
+    baked into the file when this endpoint is unreachable, so the same file is
+    both a live client and a standalone artifact -- and it says on screen which
+    of the two it is currently showing.
+    """
+    payload, rebuilt = dashboard_payload.cached_payload()
+    payload = dict(payload)
+    payload["meta"] = {**payload["meta"], "source": "api",
+                       "rebuilt_on_this_request": rebuilt}
+    return payload
 
 
 @app.post("/refresh")

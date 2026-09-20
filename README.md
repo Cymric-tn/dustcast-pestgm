@@ -250,8 +250,15 @@ and API example all quote the same snapshot:
 .venv/bin/uvicorn dustcast.api:app --port 8000
 ```
 
+Then open <http://localhost:8000/>. The dashboard fetches `/dashboard` on load
+and every five minutes, and its masthead says whether it is showing **live** data
+or the copy baked in at build time — it falls back to that copy when no API
+answers, so the same file also works as a standalone artifact.
+
 | endpoint | returns |
 |---|---|
+| `GET /` | the operator dashboard, served from the same origin as its data |
+| `GET /dashboard` | everything that page draws, in one request |
 | `GET /health` | freshness and horizon length |
 | `GET /meta` | scales, segments, capacity, provenance |
 | `GET /forecast/national` | national MW time series |
