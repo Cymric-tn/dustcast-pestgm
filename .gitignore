@@ -1,5 +1,4 @@
-# Raw provider exports: ~880 MB across four files. Fetched by the commands in
-# the README rather than committed.
+
 data/raw/
 data/processed/
 data/cache/
